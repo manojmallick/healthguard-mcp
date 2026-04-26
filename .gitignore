@@ -1,4 +1,6 @@
 .agents
+.claude
+features.json
 node_modules/
 .env
 tmp/
