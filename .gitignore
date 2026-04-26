@@ -1,0 +1,11 @@
+.agents
+node_modules/
+.env
+tmp/
+*.mp3
+dist/
+frontend/dist/
+.DS_Store
+coverage/
+*.log
+CLAUDE.md
