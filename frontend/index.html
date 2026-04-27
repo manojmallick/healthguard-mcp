@@ -6,240 +6,26 @@
   <title>HealthGuard — Compliance Decision Visualizer</title>
   <style>
     * {
-      box-sizing: border-box;
-    }
-    body {
-      background: #0a0a0f;
-      color: #f8f9fa;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       margin: 0;
       padding: 0;
+      box-sizing: border-box;
     }
-    .container {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 24px;
-      padding: 32px;
-      max-width: 1400px;
-      margin: 0 auto;
-    }
-    .panel {
-      padding: 24px;
-      background: #16161e;
-      border-radius: 12px;
-    }
-    .panel h3 {
-      color: #f8f9fa;
-      margin-bottom: 16px;
-      font-size: 18px;
-      font-weight: 600;
-    }
-    label {
-      color: #aaa;
-      font-size: 13px;
-      display: block;
-      margin-bottom: 6px;
-    }
-    select, button {
-      width: 100%;
-      padding: 8px 12px;
-      margin-bottom: 12px;
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
       background: #0a0a0f;
       color: #f8f9fa;
-      border-radius: 6px;
-      border: 1px solid #333;
-      font-size: 14px;
-      cursor: pointer;
+      line-height: 1.6;
     }
-    button {
-      background: #1d9e75;
-      color: #fff;
-      border: none;
-      font-weight: 500;
-      padding: 10px 0;
-      margin-top: 8px;
-    }
-    button:disabled {
-      background: #333;
-      cursor: not-allowed;
-    }
-    .decision-panel-permitted {
-      padding: 12px 16px;
-      border-radius: 8px;
-      margin-bottom: 16px;
-      background: #0f2d1a;
-      border: 1px solid #1d9e75;
-    }
-    .decision-panel-denied {
-      padding: 12px 16px;
-      border-radius: 8px;
-      margin-bottom: 16px;
-      background: #2d0f0f;
-      border: 1px solid #e24b4a;
-    }
-    .decision-title {
-      font-size: 18px;
-      font-weight: 600;
-      margin-bottom: 4px;
-    }
-    .decision-subtitle {
-      font-size: 13px;
-      color: #aaa;
-      margin-top: 4px;
-    }
-    .section-title {
-      font-size: 12px;
-      color: #888;
-      margin-bottom: 8px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-    .condition-met {
-      font-size: 13px;
-      color: #9fe1cb;
-      margin-bottom: 4px;
-    }
-    .condition-flag {
-      font-size: 13px;
-      color: #ef9f27;
-      margin-bottom: 4px;
-    }
-    .audit-badge {
-      padding: 10px 14px;
-      background: #0a0a0f;
-      border-radius: 6px;
-      border: 1px solid #1d9e75;
-      margin-top: 16px;
-    }
-    .audit-text {
-      font-size: 12px;
-      color: #1d9e75;
-    }
-    .audit-hash {
-      font-size: 11px;
-      color: #555;
-      margin-top: 4px;
-      font-family: monospace;
+    
+    #root {
+      min-height: 100vh;
+      padding: 20px;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <!-- Left Panel -->
-    <div class="panel">
-      <h3>Clinical scenario</h3>
-      <label>Data type</label>
-      <select id="dataType">
-        <option value="medications">Medication list</option>
-        <option value="lab_results">Lab results</option>
-        <option value="full_record">Full medical record</option>
-        <option value="imaging">Imaging studies</option>
-      </select>
-      <label>Requester role</label>
-      <select id="requesterRole">
-        <option value="specialist">Outside specialist</option>
-        <option value="treating_physician">Treating physician</option>
-        <option value="patient">Patient (self-request)</option>
-        <option value="insurer">Health insurer</option>
-      </select>
-      <label>Care relationship</label>
-      <select id="careRelationship">
-        <option value="referral">Referral</option>
-        <option value="treatment">Active treatment</option>
-        <option value="none">No relationship</option>
-      </select>
-      <label>Urgency</label>
-      <select id="urgency">
-        <option value="routine">Routine</option>
-        <option value="urgent">Urgent</option>
-        <option value="emergent">Emergent</option>
-      </select>
-      <button id="runButton" onclick="runComplianceCheck()">Run compliance check</button>
-    </div>
-
-    <!-- Right Panel -->
-    <div class="panel" id="resultsPanel" style="display: none;">
-      <div id="decisionPanel"></div>
-      <div id="conditionsPanel"></div>
-      <div id="minimumNecessaryPanel"></div>
-      <div id="auditPanel"></div>
-    </div>
-  </div>
-
-  <script>
-    async function runComplianceCheck() {
-      const button = document.getElementById('runButton');
-      const resultsPanel = document.getElementById('resultsPanel');
-
-      button.disabled = true;
-      button.textContent = 'Checking compliance...';
-
-      try {
-        const scenario = {
-          data_type: document.getElementById('dataType').value,
-          requester_role: document.getElementById('requesterRole').value,
-          care_relationship: document.getElementById('careRelationship').value,
-          urgency: document.getElementById('urgency').value
-        };
-
-        const res = await fetch('/api/v1/compliance-check', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(scenario)
-        });
-
-        const result = await res.json();
-        renderResult(result);
-        resultsPanel.style.display = 'block';
-      } catch (err) {
-        console.error('Error:', err);
-        document.getElementById('decisionPanel').innerHTML = `<div class="decision-panel-denied"><div class="decision-title">✗ ERROR</div><div class="decision-subtitle">${err.message}</div></div>`;
-        resultsPanel.style.display = 'block';
-      } finally {
-        button.disabled = false;
-        button.textContent = 'Run compliance check';
-      }
-    }
-
-    function renderResult(result) {
-      // Decision panel
-      const isPerm = result.permitted;
-      const decisionHTML = `
-        <div class="decision-panel-${isPerm ? 'permitted' : 'denied'}">
-          <div class="decision-title">${isPerm ? '✓ PERMITTED' : '✗ NOT PERMITTED'}</div>
-          <div class="decision-subtitle">${result.applicable_exception} — ${result.exception_subsection}</div>
-        </div>
-      `;
-      document.getElementById('decisionPanel').innerHTML = decisionHTML;
-
-      // Conditions panel
-      const conditionsHTML = `
-        <div>
-          <div class="section-title">Conditions met</div>
-          ${(result.conditions_met || []).map(c => `<div class="condition-met">✓ ${c}</div>`).join('')}
-        </div>
-      `;
-      document.getElementById('conditionsPanel').innerHTML = conditionsHTML;
-
-      // Minimum necessary panel
-      const mnHTML = `
-        <div style="margin-top: 16px;">
-          <div class="section-title">Minimum necessary</div>
-          ${(result.approved_elements || []).map(e => `<div class="condition-met">✓ ${e}</div>`).join('')}
-          ${(result.flagged_elements || []).map(e => `<div class="condition-flag">⚠ ${e}</div>`).join('')}
-        </div>
-      `;
-      document.getElementById('minimumNecessaryPanel').innerHTML = mnHTML;
-
-      // Audit panel
-      const auditHTML = `
-        <div class="audit-badge">
-          <div class="audit-text">✓ FHIR AuditEvent generated · Validator: 0 errors</div>
-          <div class="audit-hash">SHA-256: ${(result.audit_event_hash || '').slice(0, 20)}...</div>
-        </div>
-      `;
-      document.getElementById('auditPanel').innerHTML = auditHTML;
-    }
-  </script>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
 </body>
 </html>

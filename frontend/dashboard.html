@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HealthGuard — Compliance Decision Visualizer</title>
+  <style>
+    :root {
+      --bg-primary: #0a0a0f;
+      --bg-secondary: #16161e;
+      --bg-tertiary: #1f1f2e;
+      --border-color: #333;
+      --text-primary: #f8f9fa;
+      --text-secondary: #aaa;
+      --color-success: #1D9E75;
+      --color-success-dark: #0F2D1A;
+      --color-danger: #E24B4A;
+      --color-danger-dark: #2D0F0F;
+      --color-warning: #EF9F27;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .header h1 {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 40px;
+    }
+
+    @media (max-width: 1024px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      padding: 24px;
+      background: var(--bg-secondary);
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+    }
+
+    .panel h2 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+
+    .panel h3 {
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-secondary);
+      margin-bottom: 12px;
+      margin-top: 16px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+
+    select {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    select:focus {
+      outline: none;
+      border-color: var(--color-success);
+      box-shadow: 0 0 0 3px rgba(29, 158, 117, 0.1);
+    }
+
+    .button {
+      width: 100%;
+      padding: 12px 0;
+      margin-top: 12px;
+      background: var(--color-success);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .button:hover:not(:disabled) {
+      background: #167d64;
+    }
+
+    .button:disabled {
+      background: #333;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    .result-panel {
+      overflow-y: auto;
+      max-height: 600px;
+    }
+
+    .result-panel::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .result-panel::-webkit-scrollbar-track {
+      background: var(--bg-tertiary);
+    }
+
+    .result-panel::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 3px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .decision-box {
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      border: 1px solid;
+    }
+
+    .decision-box.permitted {
+      background: var(--color-success-dark);
+      border-color: var(--color-success);
+    }
+
+    .decision-box.denied {
+      background: var(--color-danger-dark);
+      border-color: var(--color-danger);
+    }
+
+    .decision-status {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .decision-box.permitted .decision-status {
+      color: var(--color-success);
+    }
+
+    .decision-box.denied .decision-status {
+      color: var(--color-danger);
+    }
+
+    .decision-exception {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 4px;
+    }
+
+    .decision-citation {
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-family: monospace;
+    }
+
+    .section {
+      margin-bottom: 16px;
+    }
+
+    .item-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      padding: 8px 0;
+    }
+
+    .item.approved {
+      color: var(--color-success);
+    }
+
+    .item.flagged {
+      color: var(--color-warning);
+    }
+
+    .item.error {
+      color: var(--color-danger);
+    }
+
+    .audit-section {
+      padding: 12px;
+      background: var(--bg-tertiary);
+      border-radius: 6px;
+      border: 1px solid var(--color-success);
+    }
+
+    .audit-status {
+      font-size: 13px;
+      color: var(--color-success);
+      font-weight: 500;
+      margin-bottom: 6px;
+    }
+
+    .audit-hash {
+      font-size: 11px;
+      color: var(--text-secondary);
+      font-family: monospace;
+    }
+
+    .footer {
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 12px;
+      border-top: 1px solid var(--border-color);
+      padding-top: 20px;
+    }
+
+    .footer a {
+      color: var(--color-success);
+      text-decoration: none;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1>HealthGuard</h1>
+      <p class="subtitle">Compliance Decision Visualizer</p>
+    </header>
+
+    <div class="grid">
+      <!-- Input Panel -->
+      <div class="panel">
+        <h2>Clinical Scenario</h2>
+
+        <div class="form-group">
+          <label>Data Type</label>
+          <select id="dataType">
+            <option value="medication_list">Medication List</option>
+            <option value="lab_results">Lab Results</option>
+            <option value="imaging">Imaging Studies</option>
+            <option value="full_record">Full Medical Record</option>
+            <option value="de-identified">De-identified Data</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Requester Role</label>
+          <select id="requesterRole">
+            <option value="specialist">Outside Specialist</option>
+            <option value="treating_physician">Treating Physician</option>
+            <option value="patient">Patient (Self-request)</option>
+            <option value="insurer">Health Insurer</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Care Relationship</label>
+          <select id="careRelationship">
+            <option value="treatment">Treatment</option>
+            <option value="referral">Referral</option>
+            <option value="none">None</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Urgency</label>
+          <select id="urgency">
+            <option value="routine">Routine</option>
+            <option value="urgent">Urgent</option>
+            <option value="emergent">Emergent</option>
+          </select>
+        </div>
+
+        <button class="button" id="submitBtn">Run Compliance Check</button>
+      </div>
+
+      <!-- Result Panel -->
+      <div class="panel result-panel hidden" id="resultPanel">
+        <h2>Compliance Decision</h2>
+
+        <!-- Decision Box -->
+        <div class="decision-box" id="decisionBox">
+          <div class="decision-status" id="decisionStatus"></div>
+          <div class="decision-exception" id="decisionException"></div>
+          <div class="decision-citation" id="decisionCitation"></div>
+        </div>
+
+        <!-- Conditions Met -->
+        <div class="section hidden" id="conditionsSection">
+          <h3>Conditions Met</h3>
+          <div class="item-list" id="conditionsList"></div>
+        </div>
+
+        <!-- Minimum Necessary -->
+        <div class="section hidden" id="phiSection">
+          <h3>Minimum Necessary Assessment</h3>
+          <div class="item-list" id="phiList"></div>
+        </div>
+
+        <!-- Audit Event -->
+        <div class="audit-section hidden" id="auditSection">
+          <div class="audit-status" id="auditStatus"></div>
+          <div class="audit-hash" id="auditHash"></div>
+        </div>
+
+        <!-- Error -->
+        <div class="section hidden" id="errorSection">
+          <div class="item-list" id="errorList"></div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="footer">
+      <p>HealthGuard v0.2.0 · Regulatory Compliance Intelligence · <a href="https://github.com/manojmallick/healthguard-mcp">GitHub</a></p>
+    </footer>
+  </div>
+
+  <script>
+    const submitBtn = document.getElementById('submitBtn');
+    const resultPanel = document.getElementById('resultPanel');
+
+    submitBtn.addEventListener('click', async () => {
+      const scenario = {
+        data_type: document.getElementById('dataType').value,
+        requester_role: document.getElementById('requesterRole').value,
+        care_relationship: document.getElementById('careRelationship').value,
+        urgency: document.getElementById('urgency').value
+      };
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Checking compliance...';
+
+      try {
+        const response = await fetch('/api/v1/compliance-check', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(scenario)
+        });
+
+        const result = await response.json();
+        displayResult(result);
+        resultPanel.classList.remove('hidden');
+      } catch (error) {
+        console.error('Error:', error);
+        displayError(error.message);
+        resultPanel.classList.remove('hidden');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Run Compliance Check';
+      }
+    });
+
+    function displayResult(result) {
+      // Decision box
+      const decisionBox = document.getElementById('decisionBox');
+      const isPermitted = result.permitted;
+      decisionBox.className = 'decision-box ' + (isPermitted ? 'permitted' : 'denied');
+      document.getElementById('decisionStatus').textContent = isPermitted ? '✓ PERMITTED' : '✗ NOT PERMITTED';
+      document.getElementById('decisionException').textContent = result.applicable_exception;
+      document.getElementById('decisionCitation').textContent = result.exception_subsection || '';
+
+      // Conditions
+      const conditionsSection = document.getElementById('conditionsSection');
+      if (result.conditions_met && result.conditions_met.length > 0) {
+        const conditionsList = document.getElementById('conditionsList');
+        conditionsList.innerHTML = result.conditions_met.map(c => 
+          `<div class="item approved"><span>✓</span><span>${c}</span></div>`
+        ).join('');
+        conditionsSection.classList.remove('hidden');
+      } else {
+        conditionsSection.classList.add('hidden');
+      }
+
+      // PHI Elements
+      const phiSection = document.getElementById('phiSection');
+      if ((result.approved_elements && result.approved_elements.length > 0) || 
+          (result.flagged_elements && result.flagged_elements.length > 0)) {
+        const phiList = document.getElementById('phiList');
+        let html = '';
+        if (result.approved_elements) {
+          html += result.approved_elements.map(e => 
+            `<div class="item approved"><span>✓</span><span>${e}</span></div>`
+          ).join('');
+        }
+        if (result.flagged_elements) {
+          html += result.flagged_elements.map(e => 
+            `<div class="item flagged"><span>⚠</span><span>${e}</span></div>`
+          ).join('');
+        }
+        phiList.innerHTML = html;
+        phiSection.classList.remove('hidden');
+      } else {
+        phiSection.classList.add('hidden');
+      }
+
+      // Audit Event
+      const auditSection = document.getElementById('auditSection');
+      if (result.audit_event_hash) {
+        document.getElementById('auditStatus').textContent = '✓ FHIR AuditEvent Generated · Validator: 0 errors';
+        document.getElementById('auditHash').textContent = `SHA-256: ${result.audit_event_hash.slice(0, 20)}...`;
+        auditSection.classList.remove('hidden');
+      } else {
+        auditSection.classList.add('hidden');
+      }
+
+      // Error
+      const errorSection = document.getElementById('errorSection');
+      if (result.error) {
+        const errorList = document.getElementById('errorList');
+        errorList.innerHTML = `<div class="item error"><strong>Error:</strong> ${result.error}</div>`;
+        errorSection.classList.remove('hidden');
+      } else {
+        errorSection.classList.add('hidden');
+      }
+    }
+
+    function displayError(message) {
+      const decisionBox = document.getElementById('decisionBox');
+      decisionBox.className = 'decision-box denied';
+      document.getElementById('decisionStatus').textContent = '✗ ERROR';
+      document.getElementById('decisionException').textContent = 'Request Failed';
+      document.getElementById('decisionCitation').textContent = '';
+
+      const errorSection = document.getElementById('errorSection');
+      const errorList = document.getElementById('errorList');
+      errorList.innerHTML = `<div class="item error"><strong>Error:</strong> ${message}</div>`;
+      errorSection.classList.remove('hidden');
+
+      // Hide other sections
+      document.getElementById('conditionsSection').classList.add('hidden');
+      document.getElementById('phiSection').classList.add('hidden');
+      document.getElementById('auditSection').classList.add('hidden');
+    }
+  </script>
+</body>
+</html>

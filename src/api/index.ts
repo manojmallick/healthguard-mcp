@@ -69,8 +69,12 @@ app.use('/mcp', mcpRouter);
 app.use(express.static(path.join(__dirname, '../../frontend')));
 
 // Visualizer dashboard route
+app.get('/', (req: Request, res: Response) => {
+  res.sendFile(path.join(__dirname, '../../frontend/dashboard.html'));
+});
+
 app.get('/dashboard', (req: Request, res: Response) => {
-  res.sendFile(path.join(__dirname, '../../frontend/index.html'));
+  res.sendFile(path.join(__dirname, '../../frontend/dashboard.html'));
 });
 
 // Error handling middleware
