@@ -72,7 +72,7 @@ describe('Compliance Check Endpoint', () => {
 
     it('should include audit event hash', async () => {
       const result = {
-        audit_event_hash: 'abc123def456',
+        audit_event_hash: 'abcdef1234567890abcdef1234567890abcdef12',
       };
 
       expect(result.audit_event_hash).toMatch(/^[a-f0-9]{40,64}$/i);

@@ -83,7 +83,7 @@ describe('MinimumNecessaryTool', () => {
             'medications',
             'allergies',
           ],
-          flagged_elements: ['full_lab_history', 'mental_health'],
+          flagged_elements: ['lab_full_history', 'mental_health'],
           rationale:
             'Specialist referral: cardiac diagnosis relevant; mental health unrelated; full history not necessary',
           regulatory_citation: '45 CFR §164.502(b)',
@@ -98,7 +98,7 @@ describe('MinimumNecessaryTool', () => {
           'diagnoses',
           'medications',
           'allergies',
-          'full_lab_history',
+          'lab_full_history',
           'mental_health',
         ],
         stated_purpose: 'REFERRAL',
@@ -107,7 +107,7 @@ describe('MinimumNecessaryTool', () => {
       });
 
       expect(result.flagged_elements).toContain('mental_health');
-      expect(result.flagged_elements).toContain('full_lab_history');
+      expect(result.flagged_elements).toContain('lab_full_history');
       expect(result.approved_elements).toContain('diagnoses');
     });
 

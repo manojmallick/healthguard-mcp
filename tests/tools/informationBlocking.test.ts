@@ -290,7 +290,7 @@ describe('InformationBlockingTool', () => {
       });
 
       // The citation is preserved but we can validate it contains valid section number
-      expect(result.exception_subsection).toMatch(/§171\.(30[2-9]|31[0-9])/);
+      expect(result.exception_subsection).toMatch(/§171\.(20[1-6]|30[1-3])/);
     });
   });
 

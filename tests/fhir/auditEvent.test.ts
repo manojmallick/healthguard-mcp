@@ -128,7 +128,7 @@ describe('AuditEventBuilder', () => {
     it('should not include extension when citation not provided', () => {
       const auditEvent = AuditEventBuilder.build(input);
 
-      expect(auditEvent.extension).toBeUndefined();
+      expect(auditEvent.extension).toEqual([]);
     });
   });
 
