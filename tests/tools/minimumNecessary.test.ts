@@ -209,6 +209,25 @@ describe('MinimumNecessaryTool', () => {
 
   describe('Patient Request', () => {
     it('should approve ALL elements for patient access request', async () => {
+      vi.spyOn(llmClient, 'invokeToolWithRetry').mockResolvedValue({
+        success: true,
+        result: {
+          assessment: 'APPROVED',
+          approved_elements: [
+            'name',
+            'dob',
+            'diagnoses',
+            'mental_health',
+            'genetic_data',
+            'substance_use',
+          ],
+          flagged_elements: [],
+          rationale: 'Patient access right — all elements approved per 45 CFR §164.524',
+          regulatory_citation: '45 CFR §164.524',
+        },
+        retries: 0,
+      });
+
       const result = await tool.assess({
         phi_elements_requested: [
           'name',
