@@ -11,10 +11,17 @@ frontend/dist/
 coverage/
 *.log
 
-# Submission artifacts (not committed to repository)
+# Submission artifacts and internal docs (not committed to repository)
 CLAUDE.md
 DEMO_VIDEO.md
 REGULATORY_AUDIT_RESULTS.md
+REGULATORY_AUDIT.md
+AUDIT_WORKSHEET.md
+COVER_IMAGE_DESIGN.txt
+DEPLOYMENT.md
+DEVPOST_SUBMISSION.md
+GITHUB_ISSUES.md
+SUBMISSION_CHECKLIST.md
 demo-assets/
 devpost-submission/
 submission-prep/
