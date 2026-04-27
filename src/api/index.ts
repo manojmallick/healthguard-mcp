@@ -11,6 +11,17 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 // Middleware
 app.use(express.json());
 
+// CORS headers for MCP server (allow requests from Prompt Opinion)
+app.use((req: Request, res: Response, next: NextFunction) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
 // Request logging middleware (Cloud Logging JSON format)
 app.use((req: Request, res: Response, next: NextFunction) => {
   const start = Date.now();

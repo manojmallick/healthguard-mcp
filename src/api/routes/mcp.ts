@@ -24,6 +24,256 @@ function initializeTools() {
   }
 }
 
+// MCP base endpoint - GET returns error (must use POST for Streamable HTTP)
+router.get('/', (req: Request, res: Response) => {
+  res.status(400).json({
+    error: 'Use POST for MCP Streamable HTTP.',
+  });
+});
+
+// Handle POST requests to base endpoint (JSON-RPC 2.0 protocol)
+router.post('/', async (req: Request, res: Response) => {
+  // Validate Accept header for Streamable HTTP
+  const acceptHeader = req.headers.accept || '';
+  if (!acceptHeader.includes('application/json') || !acceptHeader.includes('text/event-stream')) {
+    return res.status(400).json({
+      jsonrpc: '2.0',
+      error: {
+        code: -32000,
+        message: 'Not Acceptable: Client must accept both application/json and text/event-stream',
+      },
+      id: req.body.id || null,
+    });
+  }
+
+  // Validate JSON-RPC format
+  if (!req.body.jsonrpc || !req.body.method) {
+    return res.status(400).json({
+      jsonrpc: '2.0',
+      error: {
+        code: -32700,
+        message: 'Parse error: Invalid JSON-RPC message',
+      },
+      id: req.body.id || null,
+    });
+  }
+
+  // Handle initialize method
+  if (req.body.method === 'initialize') {
+    return res.json({
+      jsonrpc: '2.0',
+      id: req.body.id,
+      result: {
+        protocolVersion: '2024-11-05',
+        capabilities: {
+          tools: {},
+          extensions: {
+            'ai.promptopinion/fhir-context': {
+              scopes: [
+                { name: 'patient/Patient.read', required: true },
+                { name: 'patient/Consent.read', required: true },
+                { name: 'patient/AuditEvent.write', required: false },
+              ],
+            },
+          },
+        },
+        serverInfo: {
+          name: 'healthguard-mcp',
+          version: '0.2.0',
+        },
+      },
+    });
+  }
+
+  // Handle notifications/initialized (no-op for Streamable HTTP)
+  if (req.body.method === 'notifications/initialized') {
+    return res.json({
+      jsonrpc: '2.0',
+      id: req.body.id,
+      result: {},
+    });
+  }
+
+  // Handle list_tools method
+  if (req.body.method === 'tools/list') {
+    initializeTools();
+    return res.json({
+      jsonrpc: '2.0',
+      id: req.body.id,
+      result: {
+        tools: [
+          {
+            name: 'check_information_blocking',
+            description:
+              'Determines if data sharing complies with ONC information blocking rules (45 CFR §171.300–309).',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                requested_data_type: {
+                  type: 'string',
+                  enum: [
+                    'medications',
+                    'lab_results',
+                    'imaging',
+                    'clinical_notes',
+                    'problem_list',
+                    'allergies',
+                    'vital_signs',
+                    'full_record',
+                  ],
+                },
+                requester_role: {
+                  type: 'string',
+                  enum: [
+                    'treating_physician',
+                    'specialist',
+                    'hospital_admin',
+                    'patient',
+                    'patient_advocate',
+                    'insurer',
+                    'employer',
+                    'researcher',
+                  ],
+                },
+                care_relationship: {
+                  type: 'string',
+                  enum: ['treatment', 'referral', 'payment', 'none'],
+                },
+                urgency: {
+                  type: 'string',
+                  enum: ['routine', 'urgent', 'emergent'],
+                },
+              },
+              required: ['requested_data_type', 'requester_role', 'care_relationship', 'urgency'],
+            },
+          },
+          {
+            name: 'assess_hipaa_minimum_necessary',
+            description: 'Evaluates whether requested PHI elements meet the HIPAA minimum necessary standard.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                phi_elements_requested: {
+                  type: 'array',
+                  items: { type: 'string' },
+                },
+                stated_purpose: {
+                  type: 'string',
+                  enum: ['TREATMENT', 'PAYMENT', 'OPERATIONS', 'PATIENT_REQUEST', 'RESEARCH'],
+                },
+                requester_role: { type: 'string' },
+                care_context: { type: 'string' },
+              },
+              required: ['phi_elements_requested', 'stated_purpose', 'requester_role', 'care_context'],
+            },
+          },
+          {
+            name: 'generate_audit_event',
+            description: 'Generates a FHIR R4 compliant AuditEvent with SHA-256 hash.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                action: {
+                  type: 'string',
+                  enum: ['C', 'R', 'U', 'D', 'E'],
+                },
+                actionType: { type: 'string' },
+                outcome: {
+                  type: 'number',
+                  enum: [0, 4, 8, 12],
+                },
+              },
+              required: ['action', 'actionType', 'outcome'],
+            },
+          },
+        ],
+      },
+    });
+  }
+
+  // Handle tools/call method
+  if (req.body.method === 'tools/call') {
+    const toolName = req.body.params?.name;
+    const args = req.body.params?.arguments;
+
+    try {
+      initializeTools();
+
+      if (toolName === 'check_information_blocking') {
+        const result = await ibTool!.check(args);
+        return res.json({
+          jsonrpc: '2.0',
+          id: req.body.id,
+          result: {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(result, null, 2),
+              },
+            ],
+          },
+        });
+      } else if (toolName === 'assess_hipaa_minimum_necessary') {
+        const result = await mnTool!.assess(args);
+        return res.json({
+          jsonrpc: '2.0',
+          id: req.body.id,
+          result: {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(result, null, 2),
+              },
+            ],
+          },
+        });
+      } else if (toolName === 'generate_audit_event') {
+        const result = await auditTool!.generate(args);
+        return res.json({
+          jsonrpc: '2.0',
+          id: req.body.id,
+          result: {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(result, null, 2),
+              },
+            ],
+          },
+        });
+      } else {
+        return res.status(400).json({
+          jsonrpc: '2.0',
+          id: req.body.id,
+          error: {
+            code: -32602,
+            message: `Unknown tool: ${toolName}`,
+          },
+        });
+      }
+    } catch (error) {
+      return res.status(400).json({
+        jsonrpc: '2.0',
+        id: req.body.id,
+        error: {
+          code: -32603,
+          message: error instanceof Error ? error.message : String(error),
+        },
+      });
+    }
+  }
+
+  // Unknown method
+  res.status(400).json({
+    jsonrpc: '2.0',
+    error: {
+      code: -32601,
+      message: `Unknown method: ${req.body.method}`,
+    },
+    id: req.body.id,
+  });
+});
+
 // MCP Tools discovery endpoint
 router.get('/tools', (req: Request, res: Response) => {
   const tools = [
@@ -154,24 +404,26 @@ router.get('/tools', (req: Request, res: Response) => {
 
 // MCP Tool call endpoint
 router.post('/call', async (req: Request, res: Response) => {
-  const { tool, arguments: args } = req.body;
+  // Accept both "tool" (REST) and "name" (standard MCP) field names
+  const toolName = req.body.tool || req.body.name;
+  const args = req.body.arguments;
 
   try {
     initializeTools();
 
-    if (tool === 'check_information_blocking') {
+    if (toolName === 'check_information_blocking') {
       const result = await ibTool!.check(args);
       res.json({
         success: true,
         result,
       });
-    } else if (tool === 'assess_hipaa_minimum_necessary') {
+    } else if (toolName === 'assess_hipaa_minimum_necessary') {
       const result = await mnTool!.assess(args);
       res.json({
         success: true,
         result,
       });
-    } else if (tool === 'generate_audit_event') {
+    } else if (toolName === 'generate_audit_event') {
       const result = await auditTool!.generate(args);
       res.json({
         success: true,
@@ -180,7 +432,7 @@ router.post('/call', async (req: Request, res: Response) => {
     } else {
       res.status(400).json({
         success: false,
-        error: `Unknown tool: ${tool}`,
+        error: `Unknown tool: ${toolName}`,
       });
     }
   } catch (error) {

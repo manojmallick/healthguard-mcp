@@ -16,14 +16,14 @@ describe('InformationBlockingTool', () => {
     tool = new InformationBlockingTool(llmClient);
   });
 
-  describe('Treatment Exception (§171.302)', () => {
+  describe('Preventing Harm Exception (§171.201)', () => {
     it('should permit medication list sharing between treating providers', async () => {
       vi.spyOn(llmClient, 'invokeToolWithRetry').mockResolvedValue({
         success: true,
         result: {
           permitted: true,
-          applicable_exception: 'TREATMENT' as InformationBlockingException,
-          exception_subsection: '45 CFR §171.302(a)',
+          applicable_exception: 'PREVENTING_HARM' as InformationBlockingException,
+          exception_subsection: '45 CFR §171.201(a)',
           conditions_met: [
             'Treating provider relationship established',
             'Data necessary for treatment',
@@ -45,18 +45,18 @@ describe('InformationBlockingTool', () => {
       });
 
       expect(result.permitted).toBe(true);
-      expect(result.applicable_exception).toBe('TREATMENT');
-      expect(result.exception_subsection).toContain('§171.302');
+      expect(result.applicable_exception).toBe('PREVENTING_HARM');
+      expect(result.exception_subsection).toContain('§171.201');
       expect(result.confidence).toBeGreaterThanOrEqual(0.9);
     });
 
-    it('should handle referral scenario as treatment', async () => {
+    it('should handle referral scenario as preventing harm', async () => {
       vi.spyOn(llmClient, 'invokeToolWithRetry').mockResolvedValue({
         success: true,
         result: {
           permitted: true,
-          applicable_exception: 'TREATMENT' as InformationBlockingException,
-          exception_subsection: '45 CFR §171.302(a)',
+          applicable_exception: 'PREVENTING_HARM' as InformationBlockingException,
+          exception_subsection: '45 CFR §171.201(a)',
           conditions_met: [
             'Referral relationship',
             'Specialist receiving records',
@@ -78,18 +78,18 @@ describe('InformationBlockingTool', () => {
       });
 
       expect(result.permitted).toBe(true);
-      expect(result.applicable_exception).toBe('TREATMENT');
+      expect(result.applicable_exception).toBe('PREVENTING_HARM');
     });
   });
 
-  describe('Payment Exception (§171.303)', () => {
+  describe('Fees Exception (§171.302)', () => {
     it('should permit data sharing for claim adjudication', async () => {
       vi.spyOn(llmClient, 'invokeToolWithRetry').mockResolvedValue({
         success: true,
         result: {
           permitted: true,
-          applicable_exception: 'PAYMENT' as InformationBlockingException,
-          exception_subsection: '45 CFR §171.303(a)',
+          applicable_exception: 'FEES' as InformationBlockingException,
+          exception_subsection: '45 CFR §171.302(a)',
           conditions_met: [
             'Payment purpose',
             'Health plan is recipient',
@@ -111,8 +111,8 @@ describe('InformationBlockingTool', () => {
       });
 
       expect(result.permitted).toBe(true);
-      expect(result.applicable_exception).toBe('PAYMENT');
-      expect(result.exception_subsection).toContain('§171.303');
+      expect(result.applicable_exception).toBe('FEES');
+      expect(result.exception_subsection).toContain('§171.302');
     });
   });
 
@@ -122,8 +122,8 @@ describe('InformationBlockingTool', () => {
         success: true,
         result: {
           permitted: true,
-          applicable_exception: 'TREATMENT' as InformationBlockingException,
-          exception_subsection: '45 CFR §171.302(a)',
+          applicable_exception: 'PREVENTING_HARM' as InformationBlockingException,
+          exception_subsection: '45 CFR §171.201(a)',
           conditions_met: ['SHARP patient context provided'],
           conditions_not_met: [],
           recommended_action: 'Proceed with verified patient data',
@@ -152,8 +152,8 @@ describe('InformationBlockingTool', () => {
         success: true,
         result: {
           permitted: true,
-          applicable_exception: 'TREATMENT' as InformationBlockingException,
-          exception_subsection: '45 CFR §171.302(a)',
+          applicable_exception: 'PREVENTING_HARM' as InformationBlockingException,
+          exception_subsection: '45 CFR §171.201(a)',
           conditions_met: ['Provider relationship exists'],
           conditions_not_met: [],
           recommended_action: 'Share records',
@@ -211,8 +211,8 @@ describe('InformationBlockingTool', () => {
         success: true,
         result: {
           permitted: false,
-          applicable_exception: 'TREATMENT' as InformationBlockingException,
-          exception_subsection: '45 CFR §171.302(a)',
+          applicable_exception: 'PREVENTING_HARM' as InformationBlockingException,
+          exception_subsection: '45 CFR §171.201(a)',
           conditions_met: ['Provider relationship established'],
           conditions_not_met: [
             'Data exceeds treatment necessity',
@@ -271,7 +271,7 @@ describe('InformationBlockingTool', () => {
         success: true,
         result: {
           permitted: true,
-          applicable_exception: 'TREATMENT' as InformationBlockingException,
+          applicable_exception: 'PREVENTING_HARM' as InformationBlockingException,
           exception_subsection: '45 CFR §171.999 (invalid citation)',
           conditions_met: [],
           conditions_not_met: [],
@@ -296,12 +296,12 @@ describe('InformationBlockingTool', () => {
   });
 
   describe('Regulatory Scenarios', () => {
-    it('should handle emergent vitally important scenario', async () => {
+    it('should handle emergent preventing harm scenario', async () => {
       vi.spyOn(llmClient, 'invokeToolWithRetry').mockResolvedValue({
         success: true,
         result: {
           permitted: true,
-          applicable_exception: 'VITALLY_IMPORTANT' as InformationBlockingException,
+          applicable_exception: 'PREVENTING_HARM' as InformationBlockingException,
           exception_subsection: '45 CFR §171.201',
           conditions_met: [
             'Emergent situation',
@@ -324,17 +324,17 @@ describe('InformationBlockingTool', () => {
       });
 
       expect(result.permitted).toBe(true);
-      expect(result.applicable_exception).toBe('VITALLY_IMPORTANT');
+      expect(result.applicable_exception).toBe('PREVENTING_HARM');
     });
 
-    it('should handle healthcare operations within same entity', async () => {
+    it('should handle health IT performance optimization', async () => {
       vi.spyOn(llmClient, 'invokeToolWithRetry').mockResolvedValue({
         success: true,
         result: {
           permitted: true,
           applicable_exception:
-            'HEALTHCARE_OPERATIONS' as InformationBlockingException,
-          exception_subsection: '45 CFR §171.304(a)',
+            'HEALTH_IT_PERFORMANCE' as InformationBlockingException,
+          exception_subsection: '45 CFR §171.205(a)',
           conditions_met: [
             'Same covered entity',
             'Healthcare operations purpose',
@@ -358,7 +358,7 @@ describe('InformationBlockingTool', () => {
       });
 
       expect(result.permitted).toBe(true);
-      expect(result.applicable_exception).toBe('HEALTHCARE_OPERATIONS');
+      expect(result.applicable_exception).toBe('HEALTH_IT_PERFORMANCE');
     });
   });
 
@@ -398,8 +398,8 @@ describe('InformationBlockingTool', () => {
         success: true,
         result: {
           permitted: true,
-          applicable_exception: 'TREATMENT' as InformationBlockingException,
-          exception_subsection: '45 CFR §171.302(a)',
+          applicable_exception: 'PREVENTING_HARM' as InformationBlockingException,
+          exception_subsection: '45 CFR §171.201(a)',
           conditions_met: [],
           conditions_not_met: [],
           recommended_action: 'Share',

@@ -124,14 +124,14 @@ export class InformationBlockingTool {
 
     // Verify exception name is valid (prevent hallucination)
     const validExceptionNames = [
-      'TREATMENT',
-      'PAYMENT',
-      'HEALTHCARE_OPERATIONS',
-      'HIPAA_PERMISSION',
-      'VITALLY_IMPORTANT',
-      'INFEASIBLE',
-      'SECURITY',
+      'PREVENTING_HARM',
       'PRIVACY',
+      'SECURITY',
+      'INFEASIBILITY',
+      'HEALTH_IT_PERFORMANCE',
+      'CONTENT_AND_MANNER',
+      'FEES',
+      'LICENSING',
       'NONE',
     ];
 
@@ -182,9 +182,9 @@ TASK:
 5. Rate your confidence (0.0–1.0)
 
 CRITICAL RULES:
-- You MUST select from: TREATMENT, PAYMENT, HEALTHCARE_OPERATIONS, HIPAA_PERMISSION, VITALLY_IMPORTANT, INFEASIBLE, SECURITY, PRIVACY, or NONE
+- You MUST select from: PREVENTING_HARM, PRIVACY, SECURITY, INFEASIBILITY, HEALTH_IT_PERFORMANCE, CONTENT_AND_MANNER, FEES, LICENSING, or NONE
 - If no clear exception applies, return NONE
-- Always cite the exact CFR section (e.g., "45 CFR §171.302(a)")
+- Always cite the exact CFR section (e.g., "45 CFR §171.201" or "45 CFR §171.302")
 - Never invent exceptions or citations
 - Favor permitting access when exception conditions are substantially met
 
