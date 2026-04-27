@@ -2,6 +2,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import path from 'path';
 import healthRouter from './routes/health';
 import complianceRouter from './routes/complianceCheck';
+import mcpRouter from './routes/mcp';
 
 const app = express();
 const PORT = process.env.PORT || 3100;
@@ -9,7 +10,6 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 
 // Middleware
 app.use(express.json());
-app.use(express.static(path.join(__dirname, '../../frontend')));
 
 // Request logging middleware (Cloud Logging JSON format)
 app.use((req: Request, res: Response, next: NextFunction) => {
@@ -50,6 +50,12 @@ app.use(healthRouter);
 
 // Compliance decision visualizer
 app.use(complianceRouter);
+
+// MCP Server routes (for Prompt Opinion)
+app.use('/mcp', mcpRouter);
+
+// Static files for frontend (must come after API routes)
+app.use(express.static(path.join(__dirname, '../../frontend')));
 
 // Visualizer dashboard route
 app.get('/dashboard', (req: Request, res: Response) => {
