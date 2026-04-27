@@ -1,7 +1,9 @@
 import { Router, Request, Response } from 'express';
 import { InformationBlockingTool } from '../../tools/informationBlocking';
 import { MinimumNecessaryTool } from '../../tools/minimumNecessary';
+import { PatientConsentTool } from '../../tools/patientConsent';
 import { AuditEventTool } from '../../tools/auditEvent';
+import { RegulationLookupTool } from '../../tools/regulationLookup';
 import { GeminiLLMClient } from '../../llm/client';
 
 const router = Router();
@@ -9,18 +11,22 @@ const router = Router();
 // Initialize tools lazily to avoid errors at module load time
 let ibTool: InformationBlockingTool | null = null;
 let mnTool: MinimumNecessaryTool | null = null;
+let consentTool: PatientConsentTool | null = null;
 let auditTool: AuditEventTool | null = null;
+let regTool: RegulationLookupTool | null = null;
 
 function initializeTools() {
-  if (!ibTool || !mnTool || !auditTool) {
+  if (!ibTool || !mnTool || !consentTool || !auditTool || !regTool) {
     const llmClient = new GeminiLLMClient({
       apiKey: process.env.GOOGLE_GEMINI_API_KEY || '',
-      model: process.env.GEMINI_MODEL || 'gemini-2.0-flash',
+      model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
     });
 
     ibTool = new InformationBlockingTool(llmClient);
     mnTool = new MinimumNecessaryTool(llmClient);
+    consentTool = new PatientConsentTool(); // FHIRClient is optional
     auditTool = new AuditEventTool();
+    regTool = new RegulationLookupTool();
   }
 }
 
@@ -168,22 +174,51 @@ router.post('/', async (req: Request, res: Response) => {
             },
           },
           {
-            name: 'generate_audit_event',
-            description: 'Generates a FHIR R4 compliant AuditEvent with SHA-256 hash.',
+            name: 'check_patient_consent',
+            description: 'Queries FHIR Consent resources to verify patient consent status for data access.',
             inputSchema: {
               type: 'object',
               properties: {
-                action: {
+                patient_fhir_id: { type: 'string' },
+                data_category: { type: 'string' },
+                proposed_action: {
                   type: 'string',
-                  enum: ['C', 'R', 'U', 'D', 'E'],
-                },
-                actionType: { type: 'string' },
-                outcome: {
-                  type: 'number',
-                  enum: [0, 4, 8, 12],
+                  enum: ['read', 'share', 'research'],
                 },
               },
-              required: ['action', 'actionType', 'outcome'],
+              required: ['patient_fhir_id', 'data_category', 'proposed_action'],
+            },
+          },
+          {
+            name: 'generate_audit_event',
+            description: 'Generates a FHIR R5 compliant AuditEvent with SHA-256 hash for compliance evidence.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                action_performed: { type: 'string' },
+                patient_fhir_id: { type: 'string' },
+                acting_agent_id: { type: 'string' },
+                data_accessed: { type: 'array', items: { type: 'string' } },
+                outcome: {
+                  type: 'string',
+                  enum: ['success', 'denied', 'error'],
+                },
+                purpose_of_use: { type: 'string' },
+              },
+              required: ['action_performed', 'patient_fhir_id', 'acting_agent_id', 'outcome'],
+            },
+          },
+          {
+            name: 'get_applicable_regulations',
+            description: 'Returns applicable healthcare regulations (HIPAA, 21st Century Cures Act) with CFR citations.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                care_setting: { type: 'string' },
+                data_type: { type: 'string' },
+                proposed_action: { type: 'string' },
+              },
+              required: ['care_setting', 'data_type', 'proposed_action'],
             },
           },
         ],
@@ -227,8 +262,36 @@ router.post('/', async (req: Request, res: Response) => {
             ],
           },
         });
+      } else if (toolName === 'check_patient_consent') {
+        const result = await consentTool!.check(args);
+        return res.json({
+          jsonrpc: '2.0',
+          id: req.body.id,
+          result: {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(result, null, 2),
+              },
+            ],
+          },
+        });
       } else if (toolName === 'generate_audit_event') {
         const result = await auditTool!.generate(args);
+        return res.json({
+          jsonrpc: '2.0',
+          id: req.body.id,
+          result: {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(result, null, 2),
+              },
+            ],
+          },
+        });
+      } else if (toolName === 'get_applicable_regulations') {
+        const result = await regTool!.getApplicableRegulations(args);
         return res.json({
           jsonrpc: '2.0',
           id: req.body.id,
