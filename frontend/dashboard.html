@@ -374,8 +374,16 @@
   <script>
     const submitBtn = document.getElementById('submitBtn');
     const resultPanel = document.getElementById('resultPanel');
+    let isRequesting = false; // Debounce flag
 
     submitBtn.addEventListener('click', async () => {
+      // Prevent duplicate requests (debouncing)
+      if (isRequesting) {
+        submitBtn.textContent = 'Request in progress...';
+        return;
+      }
+
+      isRequesting = true;
       const scenario = {
         data_type: document.getElementById('dataType').value,
         requester_role: document.getElementById('requesterRole').value,
@@ -401,6 +409,7 @@
         displayError(error.message);
         resultPanel.classList.remove('hidden');
       } finally {
+        isRequesting = false;
         submitBtn.disabled = false;
         submitBtn.textContent = 'Run Compliance Check';
       }

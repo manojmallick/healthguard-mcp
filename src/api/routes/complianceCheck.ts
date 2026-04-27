@@ -7,6 +7,27 @@ import { GeminiLLMClient } from '../../llm/client';
 
 const router = Router();
 
+// Simple rate limiting: max 5 requests per 60 seconds per IP
+const requestTimestamps = new Map<string, number[]>();
+const RATE_LIMIT_WINDOW = 60000; // 60 seconds
+const RATE_LIMIT_MAX = 5; // max 5 requests per window
+
+function checkRateLimit(ip: string): { allowed: boolean; remaining: number } {
+  const now = Date.now();
+  const timestamps = requestTimestamps.get(ip) || [];
+
+  // Remove old timestamps outside the window
+  const recentTimestamps = timestamps.filter(ts => now - ts < RATE_LIMIT_WINDOW);
+
+  const allowed = recentTimestamps.length < RATE_LIMIT_MAX;
+  if (allowed) {
+    recentTimestamps.push(now);
+  }
+
+  requestTimestamps.set(ip, recentTimestamps);
+  return { allowed, remaining: Math.max(0, RATE_LIMIT_MAX - recentTimestamps.length) };
+}
+
 const ComplianceCheckInput = z.object({
   data_type: z.enum(['medications', 'medication_list', 'lab_results', 'imaging', 'full_record', 'de-identified']).transform(v => {
     // Normalize medication_list to medications
@@ -57,6 +78,25 @@ const PURPOSE_MAPPING: Record<string, string> = {
 
 router.post('/api/v1/compliance-check', async (req: Request, res: Response) => {
   const traceId = generateTraceId();
+  const clientIp = req.ip || 'unknown';
+
+  // Check rate limit
+  const { allowed, remaining } = checkRateLimit(clientIp);
+  res.setHeader('X-RateLimit-Remaining', remaining);
+
+  if (!allowed) {
+    return res.status(429).json({
+      permitted: false,
+      applicable_exception: 'RATE_LIMITED',
+      exception_subsection: 'Too many requests',
+      conditions_met: [],
+      approved_elements: [],
+      flagged_elements: [],
+      audit_event_hash: '',
+      audit_valid: false,
+      error: 'Rate limit exceeded. Maximum 5 requests per 60 seconds. Please try again later.',
+    });
+  }
 
   try {
     const input = ComplianceCheckInput.parse(req.body);
