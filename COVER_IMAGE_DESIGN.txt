@@ -1,0 +1,188 @@
+================================================================================
+HEALTHGUARD DEVPOST COVER IMAGE DESIGN SPECIFICATION
+================================================================================
+
+DIMENSIONS: 1200px (width) × 630px (height)
+FORMAT: PNG or JPG
+TOOL: Canva (canva.com) — Free, no design experience needed
+
+================================================================================
+STEP-BY-STEP CREATION IN CANVA
+================================================================================
+
+1. CREATE NEW DESIGN
+   - Go to canva.com
+   - Click "Create a design"
+   - Search for custom size: 1200 × 630
+   - Click "Create blank design"
+
+2. SET BACKGROUND
+   - Click on the blank canvas
+   - Left sidebar → "Design" tab
+   - Background color: #0a0a0f (very dark gray)
+   - Upload: Solid color only (no image)
+
+3. LEFT PANEL (0–600px) — TITLE + BADGES
+
+   a) Add title text
+      - Click "Text" → "Add heading"
+      - Type: "HealthGuard"
+      - Font size: 56px (or larger until it fits nicely)
+      - Font: Bold (e.g., Rubik, Inter, Montserrat)
+      - Color: #f8f9fa (off-white)
+      - Position: Top-left area, 40px from left, 60px from top
+
+   b) Add subtitle
+      - Click "Text" → "Add subheading"
+      - Type: "Regulatory compliance\nfor healthcare AI"
+      - Font size: 20px
+      - Font: Regular (same as title)
+      - Color: #aaaaaa (light gray)
+      - Position: Below "HealthGuard", 40px from left
+
+   c) Add three badge rectangles (stacked)
+      - Click "Elements" → Search "rounded rectangle"
+      - Add 3 rounded rectangles
+      - Each badge:
+        * Width: 280px
+        * Height: 50px
+        * Corner radius: 25px
+        * Position: Stack vertically with 12px gap
+        * Left margin: 40px
+        * Top margin: After subtitle
+
+   d) Color and text for badges
+
+      BADGE 1 (Top):
+      - Background color: #1d9e75 (green)
+      - Text: "✓ PERMITTED"
+      - Font size: 16px, bold, white, centered
+
+      BADGE 2 (Middle):
+      - Background color: #ef9f27 (amber/orange)
+      - Text: "⚠ Over-broad PHI"
+      - Font size: 16px, bold, white, centered
+
+      BADGE 3 (Bottom):
+      - Background color: #17b8a0 (teal)
+      - Text: "✓ FHIR AuditEvent"
+      - Font size: 16px, bold, white, centered
+
+4. RIGHT PANEL (600–1200px) — CODE SNIPPET
+
+   a) Add code background box
+      - Click "Elements" → "Rectangle"
+      - Width: 520px
+      - Height: 280px
+      - Background color: #16161e (slightly lighter dark)
+      - Border: 1px, #333333 (dark gray)
+      - Corner radius: 8px
+      - Position: Right side, centered vertically, 40px from right
+
+   b) Add code text
+      - Click "Text" → "Body text"
+      - Font: Monospace (e.g., "Courier New", "Source Code Pro")
+      - Font size: 13px
+      - Color: #f8f9fa (off-white)
+      - Content:
+        ```
+        {
+          "exception":
+            "Treatment Exception",
+          "citation":
+            "45 CFR §171.302(a)",
+          "permitted": true
+        }
+        ```
+      - Position: Inside the code box (20px padding)
+      - Alignment: Left
+
+5. BOTTOM BANNER (Full width, 60px height)
+
+   a) Add background rectangle
+      - Click "Elements" → "Rectangle"
+      - Width: 1200px
+      - Height: 60px
+      - Background color: #0a0a0f (same as main background)
+      - Border: 1px top, #333333 (dark gray)
+      - Position: Bottom of design
+
+   b) Add bottom text
+      - Click "Text" → "Body text"
+      - Font size: 14px
+      - Color: #aaaaaa (light gray)
+      - Content: "MCP · FHIR R4 · SHARP · A2A · Prompt Opinion"
+      - Position: Centered horizontally, 20px from bottom
+      - Alignment: Center
+
+6. REVIEW & EXPORT
+   - Check alignment: All elements should be properly spaced
+   - Check colors: Verify against hex codes above
+   - Check text readability: Zoom in and review
+   - Export as: PNG (transparent background OK)
+   - Filename: healthguard-cover.png
+
+================================================================================
+COLOR REFERENCE
+================================================================================
+
+Background:        #0a0a0f (very dark gray) — Main canvas
+Text (primary):    #f8f9fa (off-white) — Titles, code
+Text (secondary):  #aaaaaa (light gray) — Subtitles, bottom text
+Code background:   #16161e (slightly lighter dark) — Code box
+Success (green):   #1d9e75 — "✓ PERMITTED" badge
+Warning (amber):   #ef9f27 — "⚠ Over-broad" badge
+Info (teal):       #17b8a0 — "✓ FHIR AuditEvent" badge
+Border:            #333333 (dark gray) — Accents
+
+================================================================================
+WHAT EACH JUDGE WILL SEE (First 3 seconds)
+================================================================================
+
+Josh Mandel (FHIR):
+→ "FHIR AuditEvent" badge + code snippet with CFR citation
+
+Joshua Hickey (Mayo):
+→ Green PERMITTED badge + compliance-focused tagline
+
+Piyush Mathur (Clinician):
+→ "Regulatory compliance for healthcare AI" + badges
+
+Stephon Proctor (CHOP):
+→ Professional dark design + MCP/FHIR/SHARP badges
+
+Parth Tripathi (Google):
+→ "Healthcare AI" + modern, clean aesthetic (Google-like)
+
+Alice Zheng (VC):
+→ Clear value proposition (compliance intelligence)
+
+================================================================================
+FINAL CHECKLIST
+================================================================================
+
+☐ Cover image is exactly 1200 × 630px
+☐ Background is dark (#0a0a0f) — readable in light and dark contexts
+☐ Title "HealthGuard" is prominent and readable at thumbnail size
+☐ All three badges are present and color-coded correctly
+☐ Code snippet is legible (zoom in to verify)
+☐ Bottom text is centered and visible
+☐ Colors match hex codes specified
+☐ No typos in text
+☐ Image exported as PNG
+☐ File size is under 1MB (for fast loading)
+
+================================================================================
+OPTIONAL ENHANCEMENTS
+================================================================================
+
+If you want to make it even more polished:
+- Add subtle gradient to background (very subtle, #0a0a0f to #0d0d12)
+- Add subtle shadow to code box (dark shadow, low opacity)
+- Add subtle glow to badges (matching badge color, low opacity)
+- Use a nicer monospace font like "JetBrains Mono" (if available in Canva)
+- Adjust spacing if badges or code look cramped
+
+But the basic design above is production-ready as-is.
+
+================================================================================
