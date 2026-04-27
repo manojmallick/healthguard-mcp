@@ -4,181 +4,242 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HealthGuard — Compliance Decision Visualizer</title>
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
   <style>
+    * {
+      box-sizing: border-box;
+    }
     body {
       background: #0a0a0f;
       color: #f8f9fa;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      padding: 32px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    .panel {
+      padding: 24px;
+      background: #16161e;
+      border-radius: 12px;
+    }
+    .panel h3 {
+      color: #f8f9fa;
+      margin-bottom: 16px;
+      font-size: 18px;
+      font-weight: 600;
+    }
+    label {
+      color: #aaa;
+      font-size: 13px;
+      display: block;
+      margin-bottom: 6px;
+    }
+    select, button {
+      width: 100%;
+      padding: 8px 12px;
+      margin-bottom: 12px;
+      background: #0a0a0f;
+      color: #f8f9fa;
+      border-radius: 6px;
+      border: 1px solid #333;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    button {
+      background: #1d9e75;
+      color: #fff;
+      border: none;
+      font-weight: 500;
+      padding: 10px 0;
+      margin-top: 8px;
+    }
+    button:disabled {
+      background: #333;
+      cursor: not-allowed;
     }
     .decision-panel-permitted {
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 16px;
       background: #0f2d1a;
       border: 1px solid #1d9e75;
     }
     .decision-panel-denied {
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 16px;
       background: #2d0f0f;
       border: 1px solid #e24b4a;
     }
+    .decision-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .decision-subtitle {
+      font-size: 13px;
+      color: #aaa;
+      margin-top: 4px;
+    }
+    .section-title {
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
     .condition-met {
+      font-size: 13px;
       color: #9fe1cb;
+      margin-bottom: 4px;
     }
     .condition-flag {
+      font-size: 13px;
       color: #ef9f27;
+      margin-bottom: 4px;
     }
     .audit-badge {
+      padding: 10px 14px;
       background: #0a0a0f;
+      border-radius: 6px;
       border: 1px solid #1d9e75;
+      margin-top: 16px;
+    }
+    .audit-text {
+      font-size: 12px;
       color: #1d9e75;
+    }
+    .audit-hash {
+      font-size: 11px;
+      color: #555;
+      margin-top: 4px;
+      font-family: monospace;
     }
   </style>
 </head>
 <body>
-  <div id="root"></div>
-  <script type="module">
-    import React, { useState } from 'react';
-    import ReactDOM from 'react-dom/client';
+  <div class="container">
+    <!-- Left Panel -->
+    <div class="panel">
+      <h3>Clinical scenario</h3>
+      <label>Data type</label>
+      <select id="dataType">
+        <option value="medications">Medication list</option>
+        <option value="lab_results">Lab results</option>
+        <option value="full_record">Full medical record</option>
+        <option value="imaging">Imaging studies</option>
+      </select>
+      <label>Requester role</label>
+      <select id="requesterRole">
+        <option value="specialist">Outside specialist</option>
+        <option value="treating_physician">Treating physician</option>
+        <option value="patient">Patient (self-request)</option>
+        <option value="insurer">Health insurer</option>
+      </select>
+      <label>Care relationship</label>
+      <select id="careRelationship">
+        <option value="referral">Referral</option>
+        <option value="treatment">Active treatment</option>
+        <option value="none">No relationship</option>
+      </select>
+      <label>Urgency</label>
+      <select id="urgency">
+        <option value="routine">Routine</option>
+        <option value="urgent">Urgent</option>
+        <option value="emergent">Emergent</option>
+      </select>
+      <button id="runButton" onclick="runComplianceCheck()">Run compliance check</button>
+    </div>
 
-    function ComplianceDecisionTree() {
-      const [loading, setLoading] = useState(false);
-      const [result, setResult] = useState(null);
-      const [scenario, setScenario] = useState({
-        data_type: 'medications',
-        requester_role: 'specialist',
-        care_relationship: 'referral',
-        urgency: 'routine'
-      });
+    <!-- Right Panel -->
+    <div class="panel" id="resultsPanel" style="display: none;">
+      <div id="decisionPanel"></div>
+      <div id="conditionsPanel"></div>
+      <div id="minimumNecessaryPanel"></div>
+      <div id="auditPanel"></div>
+    </div>
+  </div>
 
-      const runCheck = async () => {
-        setLoading(true);
-        try {
-          const res = await fetch('/api/v1/compliance-check', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(scenario)
-          });
-          const data = await res.json();
-          setResult(data);
-        } catch (err) {
-          console.error('Compliance check failed:', err);
-          setResult({ error: err.message });
-        } finally {
-          setLoading(false);
-        }
-      };
+  <script>
+    async function runComplianceCheck() {
+      const button = document.getElementById('runButton');
+      const resultsPanel = document.getElementById('resultsPanel');
 
-      return React.createElement(
-        'div',
-        { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', padding: '32px', maxWidth: '1400px', margin: '0 auto' } },
+      button.disabled = true;
+      button.textContent = 'Checking compliance...';
 
-        // Left panel — Input
-        React.createElement(
-          'div',
-          { style: { padding: '24px', background: '#16161e', borderRadius: '12px', height: 'fit-content' } },
-          React.createElement('h3', { style: { color: '#f8f9fa', marginBottom: '16px', fontSize: '18px', fontWeight: '600' } }, 'Clinical scenario'),
+      try {
+        const scenario = {
+          data_type: document.getElementById('dataType').value,
+          requester_role: document.getElementById('requesterRole').value,
+          care_relationship: document.getElementById('careRelationship').value,
+          urgency: document.getElementById('urgency').value
+        };
 
-          React.createElement('label', { style: { color: '#aaa', fontSize: '13px', display: 'block', marginBottom: '6px' } }, 'Data type'),
-          React.createElement('select', {
-            value: scenario.data_type,
-            onChange: e => setScenario({...scenario, data_type: e.target.value}),
-            style: { width: '100%', padding: '8px 12px', marginBottom: '12px', background: '#0a0a0f', color: '#f8f9fa', borderRadius: '6px', border: '1px solid #333', fontSize: '14px' }
-          },
-            React.createElement('option', { value: 'medications' }, 'Medication list'),
-            React.createElement('option', { value: 'lab_results' }, 'Lab results'),
-            React.createElement('option', { value: 'full_record' }, 'Full medical record'),
-            React.createElement('option', { value: 'imaging' }, 'Imaging studies')
-          ),
+        const res = await fetch('/api/v1/compliance-check', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(scenario)
+        });
 
-          React.createElement('label', { style: { color: '#aaa', fontSize: '13px', display: 'block', marginBottom: '6px' } }, 'Requester role'),
-          React.createElement('select', {
-            value: scenario.requester_role,
-            onChange: e => setScenario({...scenario, requester_role: e.target.value}),
-            style: { width: '100%', padding: '8px 12px', marginBottom: '12px', background: '#0a0a0f', color: '#f8f9fa', borderRadius: '6px', border: '1px solid #333', fontSize: '14px' }
-          },
-            React.createElement('option', { value: 'specialist' }, 'Outside specialist'),
-            React.createElement('option', { value: 'treating_physician' }, 'Treating physician'),
-            React.createElement('option', { value: 'patient' }, 'Patient (self-request)'),
-            React.createElement('option', { value: 'insurer' }, 'Health insurer')
-          ),
-
-          React.createElement('label', { style: { color: '#aaa', fontSize: '13px', display: 'block', marginBottom: '6px' } }, 'Care relationship'),
-          React.createElement('select', {
-            value: scenario.care_relationship,
-            onChange: e => setScenario({...scenario, care_relationship: e.target.value}),
-            style: { width: '100%', padding: '8px 12px', marginBottom: '12px', background: '#0a0a0f', color: '#f8f9fa', borderRadius: '6px', border: '1px solid #333', fontSize: '14px' }
-          },
-            React.createElement('option', { value: 'referral' }, 'Referral'),
-            React.createElement('option', { value: 'treatment' }, 'Active treatment'),
-            React.createElement('option', { value: 'none' }, 'No treatment relationship')
-          ),
-
-          React.createElement('label', { style: { color: '#aaa', fontSize: '13px', display: 'block', marginBottom: '6px' } }, 'Urgency'),
-          React.createElement('select', {
-            value: scenario.urgency,
-            onChange: e => setScenario({...scenario, urgency: e.target.value}),
-            style: { width: '100%', padding: '8px 12px', marginBottom: '16px', background: '#0a0a0f', color: '#f8f9fa', borderRadius: '6px', border: '1px solid #333', fontSize: '14px' }
-          },
-            React.createElement('option', { value: 'routine' }, 'Routine'),
-            React.createElement('option', { value: 'urgent' }, 'Urgent'),
-            React.createElement('option', { value: 'emergent' }, 'Emergent')
-          ),
-
-          React.createElement('button', {
-            onClick: runCheck,
-            disabled: loading,
-            style: { width: '100%', padding: '10px 0', background: loading ? '#333' : '#1d9e75', color: '#fff', border: 'none', borderRadius: '6px', cursor: loading ? 'default' : 'pointer', fontSize: '14px', fontWeight: '500' }
-          }, loading ? 'Checking compliance...' : 'Run compliance check')
-        ),
-
-        // Right panel — Decision tree output
-        result && !result.error && React.createElement(
-          'div',
-          { style: { padding: '24px', background: '#16161e', borderRadius: '12px' } },
-
-          // Decision header
-          React.createElement('div', {
-            style: {
-              padding: '12px 16px',
-              borderRadius: '8px',
-              marginBottom: '16px',
-              background: result.permitted ? '#0f2d1a' : '#2d0f0f',
-              border: `1px solid ${result.permitted ? '#1d9e75' : '#e24b4a'}`
-            }
-          },
-            React.createElement('div', { style: { fontSize: '18px', fontWeight: '600', color: result.permitted ? '#1d9e75' : '#e24b4a' } }, result.permitted ? '✓ PERMITTED' : '✗ NOT PERMITTED'),
-            React.createElement('div', { style: { fontSize: '13px', color: '#aaa', marginTop: '4px' } }, `${result.applicable_exception} — ${result.exception_subsection}`)
-          ),
-
-          // Conditions met
-          React.createElement('div', { style: { marginBottom: '16px' } },
-            React.createElement('div', { style: { fontSize: '12px', color: '#888', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' } }, 'Conditions met'),
-            result.conditions_met && result.conditions_met.map((c, i) => React.createElement('div', { key: i, className: 'condition-met', style: { fontSize: '13px', marginBottom: '4px' } }, '✓ ' + c))
-          ),
-
-          // Minimum necessary
-          React.createElement('div', { style: { marginBottom: '16px' } },
-            React.createElement('div', { style: { fontSize: '12px', color: '#888', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' } }, 'Minimum necessary'),
-            result.approved_elements && result.approved_elements.map((e, i) => React.createElement('div', { key: i, className: 'condition-met', style: { fontSize: '13px', marginBottom: '4px' } }, '✓ ' + e)),
-            result.flagged_elements && result.flagged_elements.map((e, i) => React.createElement('div', { key: i, className: 'condition-flag', style: { fontSize: '13px', marginBottom: '4px' } }, '⚠ ' + e))
-          ),
-
-          // Audit event
-          React.createElement('div', {
-            className: 'audit-badge',
-            style: { padding: '10px 14px', borderRadius: '6px' }
-          },
-            React.createElement('div', { style: { fontSize: '12px' } }, '✓ FHIR AuditEvent generated · Validator: 0 errors'),
-            React.createElement('div', { style: { fontSize: '11px', color: '#555', marginTop: '4px', fontFamily: 'monospace' } }, 'SHA-256: ' + (result.audit_event_hash ? result.audit_event_hash.slice(0, 20) + '...' : 'pending'))
-          )
-        ),
-
-        result && result.error && React.createElement('div', { style: { padding: '24px', background: '#2d0f0f', borderRadius: '12px', border: '1px solid #e24b4a', color: '#e24b4a' } }, 'Error: ' + result.error)
-      );
+        const result = await res.json();
+        renderResult(result);
+        resultsPanel.style.display = 'block';
+      } catch (err) {
+        console.error('Error:', err);
+        document.getElementById('decisionPanel').innerHTML = `<div class="decision-panel-denied"><div class="decision-title">✗ ERROR</div><div class="decision-subtitle">${err.message}</div></div>`;
+        resultsPanel.style.display = 'block';
+      } finally {
+        button.disabled = false;
+        button.textContent = 'Run compliance check';
+      }
     }
 
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(React.createElement(ComplianceDecisionTree));
+    function renderResult(result) {
+      // Decision panel
+      const isPerm = result.permitted;
+      const decisionHTML = `
+        <div class="decision-panel-${isPerm ? 'permitted' : 'denied'}">
+          <div class="decision-title">${isPerm ? '✓ PERMITTED' : '✗ NOT PERMITTED'}</div>
+          <div class="decision-subtitle">${result.applicable_exception} — ${result.exception_subsection}</div>
+        </div>
+      `;
+      document.getElementById('decisionPanel').innerHTML = decisionHTML;
+
+      // Conditions panel
+      const conditionsHTML = `
+        <div>
+          <div class="section-title">Conditions met</div>
+          ${(result.conditions_met || []).map(c => `<div class="condition-met">✓ ${c}</div>`).join('')}
+        </div>
+      `;
+      document.getElementById('conditionsPanel').innerHTML = conditionsHTML;
+
+      // Minimum necessary panel
+      const mnHTML = `
+        <div style="margin-top: 16px;">
+          <div class="section-title">Minimum necessary</div>
+          ${(result.approved_elements || []).map(e => `<div class="condition-met">✓ ${e}</div>`).join('')}
+          ${(result.flagged_elements || []).map(e => `<div class="condition-flag">⚠ ${e}</div>`).join('')}
+        </div>
+      `;
+      document.getElementById('minimumNecessaryPanel').innerHTML = mnHTML;
+
+      // Audit panel
+      const auditHTML = `
+        <div class="audit-badge">
+          <div class="audit-text">✓ FHIR AuditEvent generated · Validator: 0 errors</div>
+          <div class="audit-hash">SHA-256: ${(result.audit_event_hash || '').slice(0, 20)}...</div>
+        </div>
+      `;
+      document.getElementById('auditPanel').innerHTML = auditHTML;
+    }
   </script>
 </body>
 </html>

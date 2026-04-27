@@ -3,7 +3,6 @@
   "version": "0.2.0",
   "description": "HIPAA and information blocking compliance intelligence for healthcare AI agents",
   "main": "dist/index.js",
-  "type": "module",
   "scripts": {
     "build": "tsc",
     "start": "node dist/api/index.js",

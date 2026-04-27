@@ -51,7 +51,6 @@ gcloud run deploy healthguard \
   --allow-unauthenticated \
   --set-secrets="GOOGLE_GEMINI_API_KEY=healthguard-gemini-key:latest" \
   --set-env-vars="NODE_ENV=production,\
-PORT=3100,\
 FHIR_BASE_URL=https://hapi.fhir.org/baseR4,\
 MCP_SERVER_NAME=healthguard,\
 MCP_SERVER_VERSION=0.2.0,\

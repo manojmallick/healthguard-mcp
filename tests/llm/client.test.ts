@@ -105,7 +105,7 @@ describe('GeminiLLMClient', () => {
       expect(prompt).toContain('check_information_blocking');
       expect(prompt).toContain('medications');
       expect(prompt).toContain('JSON');
-      expect(prompt).toContain('healthcare compliance specialist');
+      expect(prompt).toContain('healthcare compliance expert');
     });
 
     it('should include schema in prompt', () => {
@@ -116,7 +116,7 @@ describe('GeminiLLMClient', () => {
       };
 
       const prompt = client['buildStructuredPrompt'](request);
-      expect(prompt).toContain('Schema details');
+      expect(prompt).toContain('Required output format');
     });
 
     it('should prevent hallucinated regulatory citations', () => {
@@ -127,8 +127,8 @@ describe('GeminiLLMClient', () => {
       };
 
       const prompt = client['buildStructuredPrompt'](request);
-      expect(prompt).toContain('fixed enumerations');
-      expect(prompt).toContain('hallucinated');
+      expect(prompt).toContain('hallucinate');
+      expect(prompt).toContain('REQUIRED');
     });
   });
 

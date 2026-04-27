@@ -103,23 +103,47 @@ export class GeminiLLMClient {
   }
 
   private buildStructuredPrompt(request: ToolInvocationRequest): string {
-    const schemaStr = typeof request.schema === 'object'
-      ? JSON.stringify((request.schema as unknown as Record<string, unknown>).description || 'No description')
-      : String(request.schema);
+    // Generate schema description based on tool name
+    let schemaDescription = '';
 
-    return `You are a healthcare compliance specialist.
+    if (request.toolName === 'check_information_blocking') {
+      schemaDescription = `{
+  "permitted": boolean (true/false),
+  "applicable_exception": string (one of: "TREATMENT", "PAYMENT", "HEALTHCARE_OPERATIONS", "HIPAA_PERMISSION", "VITALLY_IMPORTANT", "INFEASIBLE", "SECURITY", "PRIVACY", "NONE"),
+  "exception_subsection": string (valid 45 CFR citation like "45 CFR §171.302(a)"),
+  "conditions_met": array of strings (conditions that are met),
+  "conditions_not_met": array of strings (conditions that are not met),
+  "recommended_action": string (action recommendation),
+  "confidence": number between 0 and 1,
+  "audit_trail_required": boolean
+}`;
+    } else if (request.toolName === 'assess_hipaa_minimum_necessary') {
+      schemaDescription = `{
+  "assessment": string (one of: "APPROVED", "FLAGGED", "DENIED"),
+  "approved_elements": array of strings (PHI elements approved for sharing),
+  "flagged_elements": array of strings (PHI elements flagged as excessive),
+  "rationale": string (explanation of assessment),
+  "regulatory_citation": string (valid 45 CFR citation)
+}`;
+    } else {
+      schemaDescription = 'Return valid JSON with all required fields. Do not omit any fields.';
+    }
+
+    return `You are a US healthcare compliance expert.
 
 Tool: ${request.toolName}
 Input: ${JSON.stringify(request.input, null, 2)}
 
-Output schema: Respond ONLY with valid JSON matching this structure.
-Do not include markdown, code blocks, or explanations.
-Validate all outputs against fixed enumerations (no hallucinated values).
+CRITICAL: Respond ONLY with valid JSON. No markdown, no code blocks, no explanations.
 
-Schema details:
-${schemaStr}
+Required output format:
+${schemaDescription}
 
-Respond with ONLY the JSON object.`;
+Rules:
+1. All fields are REQUIRED - do not omit any field
+2. Validate all enum values against fixed lists
+3. Do not hallucinate regulatory citations
+4. Return ONLY the JSON object`;
   }
 
   async testConnection(): Promise<boolean> {
