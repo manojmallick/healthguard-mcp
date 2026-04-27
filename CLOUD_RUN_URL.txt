@@ -1,0 +1,50 @@
+# HealthGuard Cloud Run Deployment
+
+## Service URL
+https://healthguard-908307939543.europe-west1.run.app
+
+## MCP Endpoint
+https://healthguard-908307939543.europe-west1.run.app/mcp
+
+## Health Check
+https://healthguard-908307939543.europe-west1.run.app/health
+
+## Readiness Check
+https://healthguard-908307939543.europe-west1.run.app/ready
+
+## Compliance Check Orchestration
+POST https://healthguard-908307939543.europe-west1.run.app/api/v1/compliance-check
+
+## Deployed on
+GCP Cloud Run (europe-west1)
+Project: gen-lang-client-0466757449
+Service: healthguard
+Region: europe-west1
+
+## Configuration
+- Memory: 512Mi
+- CPU: 1
+- Min instances: 0 (auto-scales down when idle)
+- Max instances: 3
+- Timeout: 60 seconds
+- Allow unauthenticated: Yes (public MCP)
+- PHP Logging: Disabled (HIPAA compliant)
+
+## Secrets
+- GOOGLE_GEMINI_API_KEY: Stored in Secret Manager
+- FHIR_TOKEN: Not set (using public HAPI FHIR server)
+
+## Environment Variables
+- NODE_ENV: production
+- FHIR_BASE_URL: https://hapi.fhir.org/baseR4
+- MCP_SERVER_NAME: healthguard
+- MCP_SERVER_VERSION: 0.2.0
+- GEMINI_MODEL: gemini-2.0-flash
+- PHI_LOGGING_ENABLED: false
+
+## Next Steps
+1. Register this URL in Prompt Opinion Marketplace
+2. Test tools from Prompt Opinion platform
+3. Verify SHARP context propagation
+4. Record demo video
+5. Submit on Devpost
