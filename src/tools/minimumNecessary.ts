@@ -5,6 +5,7 @@ import {
   getMinimumNecessaryRule,
   validatePHIElements,
   getPHIElement,
+  PHI_ELEMENTS,
 } from '../regulatory/hipaa';
 
 // Tool input schema
@@ -51,9 +52,7 @@ export class MinimumNecessaryTool {
     if (invalidElements.length > 0) {
       throw new Error(
         `Invalid PHI elements: ${invalidElements.join(', ')}. ` +
-          `Valid elements: ${Object.keys(
-            require('../regulatory/hipaa').PHI_ELEMENTS
-          ).join(', ')}`
+          `Valid elements: ${Object.keys(PHI_ELEMENTS).join(', ')}`
       );
     }
 

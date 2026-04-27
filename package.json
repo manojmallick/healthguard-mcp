@@ -6,6 +6,8 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
+    "start": "node dist/api/index.js",
+    "start:dev": "npm run build && npm start",
     "dev": "tsc --watch",
     "test": "vitest run",
     "test:watch": "vitest watch",
@@ -26,7 +28,9 @@
   "author": "Manoj Mallick",
   "license": "MIT",
   "dependencies": {
-    "@google/generative-ai": "^0.1.3",
+    "@google/generative-ai": "^0.24.0",
+    "@types/express": "^5.0.6",
+    "express": "^5.2.1",
     "zod": "^3.22.4"
   },
   "devDependencies": {
