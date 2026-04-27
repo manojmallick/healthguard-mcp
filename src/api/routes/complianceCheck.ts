@@ -8,7 +8,10 @@ import { GeminiLLMClient } from '../../llm/client';
 const router = Router();
 
 const ComplianceCheckInput = z.object({
-  data_type: z.enum(['medications', 'lab_results', 'imaging', 'full_record', 'de-identified']),
+  data_type: z.enum(['medications', 'medication_list', 'lab_results', 'imaging', 'full_record', 'de-identified']).transform(v => {
+    // Normalize medication_list to medications
+    return v === 'medication_list' ? 'medications' : v;
+  }),
   requester_role: z.enum(['specialist', 'treating_physician', 'patient', 'insurer']),
   care_relationship: z.enum(['treatment', 'referral', 'none']),
   urgency: z.enum(['routine', 'urgent', 'emergent']),
@@ -111,30 +114,18 @@ router.post('/api/v1/compliance-check', async (req: Request, res: Response) => {
           type: 'Patient',
           id: 'patient-example',
         },
-        type: [
-          {
-            system: 'http://terminology.hl7.org/CodeSystem/audit-entity-type',
-            code: '2', // Data
-          },
-        ],
-        role: [
-          {
-            system: 'http://terminology.hl7.org/CodeSystem/object-role',
-            code: '1', // Patient
-          },
-        ],
-        lifecycle: [
-          {
-            system: 'http://terminology.hl7.org/CodeSystem/audit-entity-lifecycle',
-            code: '3', // Access/Use
-          },
-        ],
+        role: {
+          system: 'http://terminology.hl7.org/CodeSystem/object-role',
+          code: '1', // Patient
+          display: 'Patient',
+        },
+        lifecycle: 'Access/Use',
         name: 'PatientRecord',
         description: `Data access: ${phiElements.join(', ')}`,
       },
       purpose: purpose,
       regulatoryCitation: ibResult.exception_subsection,
-      dataAccessed: phiElements,
+      dataAccessed: phiElements.join(', '),
     });
 
     const result: ComplianceCheckResult = {
