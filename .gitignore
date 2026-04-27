@@ -11,3 +11,5 @@ frontend/dist/
 coverage/
 *.log
 CLAUDE.md
+DEMO_VIDEO.md
+REGULATORY_AUDIT_RESULTS.md
