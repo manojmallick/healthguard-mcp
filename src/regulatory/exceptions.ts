@@ -1,6 +1,6 @@
 // 45 CFR Part 171 — ONC Information Blocking Rule
 // 21st Century Cures Act § 3022
-// Exceptions to Information Blocking (§171.302–309)
+// Exceptions to Information Blocking (§171.201–206 and §171.301–303)
 
 export interface InformationBlockingException {
   id: string;
@@ -18,11 +18,11 @@ export const INFORMATION_BLOCKING_EXCEPTIONS: Record<
 > = {
   TREATMENT: {
     id: 'TREATMENT',
-    name: 'Treatment Exception',
-    cfr_section: '45 CFR §171.302',
+    name: 'Preventing Harm Exception',
+    cfr_section: '45 CFR §171.201',
     statute_reference: '42 U.S.C. 300jj-50(a)(1)(A)',
     description:
-      'Exception for treatment purposes where information is shared between providers with treatment relationship',
+      'Exception for practices that are reasonable and necessary to prevent harm to a patient or another person',
     conditions: [
       'Patient is under care of both the sending and receiving provider',
       'Information is necessary for treatment, payment, or healthcare operations',
@@ -38,11 +38,11 @@ export const INFORMATION_BLOCKING_EXCEPTIONS: Record<
 
   PAYMENT: {
     id: 'PAYMENT',
-    name: 'Payment Exception',
-    cfr_section: '45 CFR §171.303',
+    name: 'Fees Exception',
+    cfr_section: '45 CFR §171.302',
     statute_reference: '42 U.S.C. 300jj-50(a)(1)(B)',
     description:
-      'Exception for payment purposes as defined in HIPAA Privacy Rule',
+      'Exception when actor charges reasonable fees for accessing, exchanging, or using electronic health information',
     conditions: [
       'Use or disclosure is for payment purposes under HIPAA',
       'Information is limited to what is necessary for payment',
@@ -58,11 +58,11 @@ export const INFORMATION_BLOCKING_EXCEPTIONS: Record<
 
   HEALTHCARE_OPERATIONS: {
     id: 'HEALTHCARE_OPERATIONS',
-    name: 'Healthcare Operations Exception',
-    cfr_section: '45 CFR §171.304',
+    name: 'Health IT Performance Exception',
+    cfr_section: '45 CFR §171.205',
     statute_reference: '42 U.S.C. 300jj-50(a)(1)(C)',
     description:
-      'Exception for healthcare operations as defined in HIPAA Privacy Rule, limited to within same covered entity',
+      'Exception when actor takes reasonable and necessary measures to maintain or improve health IT performance',
     conditions: [
       'Both sending and receiving are part of same covered entity or organized healthcare arrangement',
       'Use or disclosure is for healthcare operations (quality improvement, case management, etc.)',
@@ -78,11 +78,11 @@ export const INFORMATION_BLOCKING_EXCEPTIONS: Record<
 
   HIPAA_PERMISSION: {
     id: 'HIPAA_PERMISSION',
-    name: 'HIPAA Permission Exception',
-    cfr_section: '45 CFR §171.305',
+    name: 'Privacy Exception',
+    cfr_section: '45 CFR §171.202',
     statute_reference: '42 U.S.C. 300jj-50(a)(1)(D)',
     description:
-      'Exception when disclosure is authorized by HIPAA (patient authorization, court order, etc.)',
+      'Exception when actor does not fulfill request to protect an individual privacy under HIPAA or state/tribal law',
     conditions: [
       'Valid patient authorization exists (signed, dated, specific)',
       'OR court order authorizes disclosure',
@@ -98,11 +98,11 @@ export const INFORMATION_BLOCKING_EXCEPTIONS: Record<
 
   VITALLY_IMPORTANT: {
     id: 'VITALLY_IMPORTANT',
-    name: 'Vitally Important Purposes Exception',
-    cfr_section: '45 CFR §171.306',
+    name: 'Preventing Harm Exception',
+    cfr_section: '45 CFR §171.201',
     statute_reference: '42 U.S.C. 300jj-50(a)(1)(E)',
     description:
-      'Exception when disclosure is necessary to prevent serious harm from abuse, neglect, or exploitation',
+      'Exception for practices reasonable and necessary to prevent serious, likely fatal harm to patient or another person',
     conditions: [
       'Information is necessary to prevent serious harm',
       'Harm involves abuse, neglect, or exploitation of vulnerable person',
@@ -119,10 +119,10 @@ export const INFORMATION_BLOCKING_EXCEPTIONS: Record<
   INFEASIBLE: {
     id: 'INFEASIBLE',
     name: 'Infeasibility Exception',
-    cfr_section: '45 CFR §171.307',
+    cfr_section: '45 CFR §171.204',
     statute_reference: '42 U.S.C. 300jj-50(a)(1)(F)',
     description:
-      'Exception when compliance with API requirements is infeasible due to technological or operational barriers',
+      'Exception when actor does not fulfill request due to infeasibility of the request',
     conditions: [
       'Good faith effort has been made to comply with technical requirements',
       'Compliance would require substantial additional costs or system redesign',
@@ -138,11 +138,11 @@ export const INFORMATION_BLOCKING_EXCEPTIONS: Record<
 
   SECURITY: {
     id: 'SECURITY',
-    name: 'Security Provision Exception',
-    cfr_section: '45 CFR §171.308',
+    name: 'Security Exception',
+    cfr_section: '45 CFR §171.203',
     statute_reference: '42 U.S.C. 300jj-50(a)(1)(G)',
     description:
-      'Exception when disclosure would create security risk (unencrypted unsecured channels, etc.)',
+      'Exception when actor interferes with access to protect the security of electronic health information',
     conditions: [
       'Disclosure through requested mechanism would create significant security risk',
       'Risk assessment documents the specific vulnerability',
@@ -158,11 +158,11 @@ export const INFORMATION_BLOCKING_EXCEPTIONS: Record<
 
   PRIVACY: {
     id: 'PRIVACY',
-    name: 'Privacy Protection Exception',
-    cfr_section: '45 CFR §171.309',
+    name: 'Privacy Exception',
+    cfr_section: '45 CFR §171.202',
     statute_reference: '42 U.S.C. 300jj-50(a)(1)(H)',
     description:
-      'Exception when disclosure would violate state privacy laws or expose proprietary information',
+      'Exception when actor does not fulfill request to protect individual privacy under state law or specialized privacy rules',
     conditions: [
       'State law explicitly prohibits disclosure of specific data type',
       'OR disclosure would harm competitive interests (proprietary treatment info)',
