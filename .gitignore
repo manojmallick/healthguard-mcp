@@ -10,6 +10,22 @@ frontend/dist/
 .DS_Store
 coverage/
 *.log
+
+# Submission artifacts (not committed to repository)
 CLAUDE.md
 DEMO_VIDEO.md
 REGULATORY_AUDIT_RESULTS.md
+demo-assets/
+devpost-submission/
+submission-prep/
+
+# Video and media files
+*.mp4
+*.mov
+*.webm
+
+# Devpost and form files
+*.docx
+*.pdf
+DEVPOST_FORM.md
+SUBMISSION_CHECKLIST.md
