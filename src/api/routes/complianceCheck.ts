@@ -30,10 +30,10 @@ interface ComplianceCheckResult {
 
 // Map data types to PHI elements for minimum necessary evaluation
 const PHI_BY_DATA_TYPE: Record<string, string[]> = {
-  medications: ['name', 'dob', 'mrn', 'current_medications'],
-  lab_results: ['name', 'dob', 'lab_values', 'lab_interpretation'],
-  imaging: ['name', 'dob', 'mrn', 'imaging_files', 'imaging_impression'],
-  full_record: ['name', 'dob', 'mrn', 'ssn', 'diagnoses', 'current_medications', 'lab_values', 'imaging_files', 'surgical_history'],
+  medications: ['name', 'dob', 'mrn', 'medications', 'allergies'],
+  lab_results: ['name', 'dob', 'lab_results'],
+  imaging: ['name', 'dob', 'mrn', 'imaging'],
+  full_record: ['name', 'dob', 'mrn', 'ssn', 'diagnoses', 'medications', 'lab_results', 'imaging', 'procedures'],
   'de-identified': ['patient_id_hash'],
 };
 
