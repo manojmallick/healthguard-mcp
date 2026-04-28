@@ -130,7 +130,24 @@ const handleA2ATask = async (req: Request, res: Response) => {
 
     // Execute the compliance check
     const result = await executeComplianceCheck(request);
-    res.json(result);
+
+    // Return JSON-RPC 2.0 format for A2A protocol
+    return res.json({
+      jsonrpc: '2.0',
+      id: body.message?.messageId || request.id,
+      result: {
+        message: {
+          messageId: result.id,
+          role: 'ROLE_AGENT',
+          parts: result.artifacts[0]?.parts || [
+            {
+              type: 'text',
+              text: `Compliance decision: ${result.status.state}`,
+            },
+          ],
+        },
+      },
+    });
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
     res.status(500).json({
