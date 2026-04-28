@@ -130,6 +130,20 @@ const handleA2ATask = async (req: Request, res: Response) => {
 
     // Execute the compliance check
     const result = await executeComplianceCheck(request);
+
+    // Check if this is Prompt Opinion's A2A protocol format (expects task response)
+    if (req.path === '/a2a/v1/message:send') {
+      // Wrap response for Prompt Opinion's A2A task format
+      return res.json({
+        task: {
+          id: result.id,
+          status: result.status.state,
+          result: result,
+        },
+      });
+    }
+
+    // Standard A2A response format
     res.json(result);
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
