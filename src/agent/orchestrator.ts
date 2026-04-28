@@ -25,6 +25,7 @@ export interface A2AResponse {
   id: string;
   status: { state: 'completed' | 'failed'; error?: string };
   artifacts: Array<{
+    artifactId?: string;
     parts: Array<{
       type: 'text' | 'data';
       text?: string;
@@ -310,6 +311,7 @@ export async function executeComplianceCheck(
       status: { state: 'completed' },
       artifacts: [
         {
+          artifactId: `artifact-${taskId}`,
           parts: [
             { type: 'text', text: decisionText },
             { type: 'data', data: structuredResult },
@@ -324,6 +326,7 @@ export async function executeComplianceCheck(
       status: { state: 'failed', error: errorMsg },
       artifacts: [
         {
+          artifactId: `artifact-error-${taskId}`,
           parts: [
             {
               type: 'text',
