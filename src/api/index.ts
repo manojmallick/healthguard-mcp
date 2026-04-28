@@ -3,6 +3,7 @@ import path from 'path';
 import healthRouter from './routes/health';
 import complianceRouter from './routes/complianceCheck';
 import mcpRouter from './routes/mcp';
+import a2aRouter from './routes/a2aAgent';
 
 const app = express();
 const PORT = process.env.PORT || 3100;
@@ -64,6 +65,9 @@ app.use(complianceRouter);
 
 // MCP Server routes (for Prompt Opinion)
 app.use('/mcp', mcpRouter);
+
+// A2A Agent routes (for Prompt Opinion - must come before static files)
+app.use(a2aRouter);
 
 // Static files for frontend (must come after API routes)
 app.use(express.static(path.join(__dirname, '../../frontend')));
