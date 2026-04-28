@@ -151,9 +151,11 @@ export async function executeComplianceCheck(
   request: A2ARequest
 ): Promise<A2AResponse> {
   const taskId = request.id;
+  // Extract text from message parts (handle both typed and untyped parts)
+  // Google A2A protocol doesn't include 'type' field in parts
   const userMessage = request.message.parts
-    .filter((p) => p.type === 'text')
-    .map((p) => p.text)
+    .filter((p: any) => p.type === 'text' || !p.type) // Accept text type or parts without type field
+    .map((p: any) => p.text)
     .join(' ');
 
   if (!userMessage) {
@@ -165,6 +167,7 @@ export async function executeComplianceCheck(
   }
 
   try {
+
     const llmClient = new GeminiLLMClient({
       apiKey: process.env.GOOGLE_GEMINI_API_KEY || '',
       model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
