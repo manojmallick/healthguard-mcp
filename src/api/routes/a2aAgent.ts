@@ -3,8 +3,8 @@ import { executeComplianceCheck, A2ARequest } from '../../agent/orchestrator';
 
 const router = Router();
 
-// Agent card endpoint (Google A2A standard)
-router.get('/.well-known/agent.json', (req: Request, res: Response) => {
+// Agent card endpoint (Google A2A standard + Prompt Opinion variant)
+const getAgentCard = (req: Request, res: Response) => {
   res.json({
     name: 'HealthGuard Compliance Agent',
     version: '0.2.0',
@@ -31,7 +31,11 @@ router.get('/.well-known/agent.json', (req: Request, res: Response) => {
       },
     ],
   });
-});
+};
+
+// Register both agent card endpoints (Google A2A uses agent.json, Prompt Opinion uses agent-card.json)
+router.get('/.well-known/agent.json', getAgentCard);
+router.get('/.well-known/agent-card.json', getAgentCard);
 
 // A2A task execution endpoint (Google A2A standard)
 router.post('/a2a', async (req: Request, res: Response) => {
