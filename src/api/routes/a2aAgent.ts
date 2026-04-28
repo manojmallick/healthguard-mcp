@@ -53,7 +53,24 @@ router.get('/.well-known/agent-card.json', getAgentCard);
 // A2A task execution handler (shared logic)
 const handleA2ATask = async (req: Request, res: Response) => {
   try {
-    const request: A2ARequest = req.body;
+    let request: A2ARequest;
+    const body = req.body as any;
+
+    // Convert Prompt Opinion format to A2A protocol format
+    if (body.externalAgentId && typeof body.message === 'string') {
+      // This is Prompt Opinion's format, convert it
+      request = {
+        id: body.externalAgentId || `po-${Date.now()}`,
+        message: {
+          role: 'user',
+          parts: [{ type: 'text', text: body.message }],
+        },
+        metadata: body.metadata,
+      };
+    } else {
+      // Standard A2A format
+      request = body;
+    }
 
     // Validate required fields
     if (!request.id) {
@@ -84,7 +101,7 @@ const handleA2ATask = async (req: Request, res: Response) => {
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
     res.status(500).json({
-      id: req.body?.id || 'unknown',
+      id: req.body?.id || req.body?.externalAgentId || 'unknown',
       status: {
         state: 'failed',
         error: errorMsg,
