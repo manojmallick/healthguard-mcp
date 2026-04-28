@@ -132,10 +132,16 @@ const handleA2ATask = async (req: Request, res: Response) => {
     const result = await executeComplianceCheck(request);
 
     // Return JSON-RPC 2.0 format for A2A protocol
+    // Include both message and task information for Prompt Opinion compatibility
     return res.json({
       jsonrpc: '2.0',
       id: body.message?.messageId || request.id,
       result: {
+        task: {
+          id: result.id,
+          status: 'DONE',
+          state: result.status.state,
+        },
         message: {
           messageId: result.id,
           role: 'ROLE_AGENT',
