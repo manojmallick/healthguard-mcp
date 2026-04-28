@@ -56,19 +56,38 @@ const handleA2ATask = async (req: Request, res: Response) => {
     let request: A2ARequest;
     const body = req.body as any;
 
-    // Log incoming request
-    console.log(JSON.stringify({
+    // Log incoming request with full details
+    const logRequest = {
       severity: 'INFO',
       message: 'A2A task received',
       method: req.method,
       path: req.path,
       url: req.url,
-      body: body,
+      contentType: req.get('content-type'),
+      bodyKeys: Object.keys(body),
+      hasExternalAgentId: !!body.externalAgentId,
+      hasMessage: !!body.message,
+      messageType: typeof body.message,
       timestamp: new Date().toISOString(),
-    }));
+    };
+    console.log(JSON.stringify(logRequest));
 
     // Convert various formats to our internal A2ARequest format
-    if (body.externalAgentId && typeof body.message === 'string') {
+    if (body.a2aConnectionId && body.messages && Array.isArray(body.messages)) {
+      // Prompt Opinion's native A2A protocol format
+      const messageText = body.messages
+        .filter((m: any) => m.message && typeof m.message === 'string')
+        .map((m: any) => m.message)
+        .join('\n');
+      request = {
+        id: body.a2aConnectionId || `a2a-${Date.now()}`,
+        message: {
+          role: 'user',
+          parts: [{ type: 'text', text: messageText }],
+        },
+        metadata: body.metadata || {},
+      };
+    } else if (body.externalAgentId && typeof body.message === 'string') {
       // Prompt Opinion's SendA2AMessage format: { externalAgentId, message: "text" }
       request = {
         id: body.externalAgentId || `po-${Date.now()}`,
@@ -102,10 +121,11 @@ const handleA2ATask = async (req: Request, res: Response) => {
         timestamp: new Date().toISOString(),
       }));
       return res.status(400).json({
-        id: 'unknown',
+        id: `error-${Date.now()}`,
+        sessionId: `session-${Date.now()}`,
         status: {
-          state: 'failed',
-          error: 'Missing required field: id',
+          state: 'TASK_STATE_FAILED',
+          message: 'Missing required field: id',
         },
         artifacts: [],
       });
@@ -120,9 +140,10 @@ const handleA2ATask = async (req: Request, res: Response) => {
       }));
       return res.status(400).json({
         id: request.id,
+        sessionId: request.id,
         status: {
-          state: 'failed',
-          error: 'Invalid message format. Expected message.parts array.',
+          state: 'TASK_STATE_FAILED',
+          message: 'Invalid message format. Expected message.parts array.',
         },
         artifacts: [],
       });
@@ -131,34 +152,43 @@ const handleA2ATask = async (req: Request, res: Response) => {
     // Execute the compliance check
     const result = await executeComplianceCheck(request);
 
-    // Return JSON-RPC 2.0 format for A2A protocol (matching Prompt Opinion's expected format)
+    // Return A2A protocol task format (direct task object, not JSON-RPC wrapped)
     const statusMap: Record<string, string> = {
       completed: 'TASK_STATE_COMPLETED',
       failed: 'TASK_STATE_FAILED',
       pending: 'TASK_STATE_PENDING',
     };
 
-    return res.json({
-      jsonrpc: '2.0',
-      id: body.message?.messageId || request.id,
-      result: {
-        task: {
-          id: result.id,
-          contextId: `ctx-${result.id}`,
-          status: {
-            state: statusMap[result.status.state] || 'TASK_STATE_COMPLETED',
-          },
-          artifacts: result.artifacts,
-        },
+    const task = {
+      id: result.id,
+      sessionId: body.message?.messageId || request.id,
+      contextId: `ctx-${result.id}`,
+      status: {
+        state: statusMap[result.status.state] || 'TASK_STATE_COMPLETED',
       },
-    });
+      artifacts: result.artifacts,
+    };
+
+    console.log(JSON.stringify({
+      severity: 'INFO',
+      message: 'A2A task response',
+      taskId: task.id,
+      status: task.status.state,
+      artifactCount: task.artifacts.length,
+      timestamp: new Date().toISOString(),
+    }));
+
+    // Return wrapped in task field for Prompt Opinion compatibility
+    return res.json({ task });
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
+    const taskId = req.body?.id || req.body?.externalAgentId || `task-${Date.now()}`;
     res.status(500).json({
-      id: req.body?.id || req.body?.externalAgentId || 'unknown',
+      id: taskId,
+      sessionId: req.body?.message?.messageId || taskId,
       status: {
-        state: 'failed',
-        error: errorMsg,
+        state: 'TASK_STATE_FAILED',
+        message: errorMsg,
       },
       artifacts: [],
     });
