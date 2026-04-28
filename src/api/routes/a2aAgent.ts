@@ -17,6 +17,11 @@ const getAgentCard = (req: Request, res: Response) => {
         protocolBinding: 'HTTP+JSON',
         protocolVersion: '1.0',
       },
+      {
+        url: 'https://healthguard-908307939543.europe-west1.run.app/tasks',
+        protocolBinding: 'HTTP+JSON',
+        protocolVersion: '1.0',
+      },
     ],
     capabilities: {
       streaming: false,
@@ -45,8 +50,8 @@ const getAgentCard = (req: Request, res: Response) => {
 router.get('/.well-known/agent.json', getAgentCard);
 router.get('/.well-known/agent-card.json', getAgentCard);
 
-// A2A task execution endpoint (Google A2A standard)
-router.post('/a2a', async (req: Request, res: Response) => {
+// A2A task execution handler (shared logic)
+const handleA2ATask = async (req: Request, res: Response) => {
   try {
     const request: A2ARequest = req.body;
 
@@ -87,6 +92,10 @@ router.post('/a2a', async (req: Request, res: Response) => {
       artifacts: [],
     });
   }
-});
+};
+
+// Register both common A2A task endpoints
+router.post('/a2a', handleA2ATask);
+router.post('/tasks', handleA2ATask);
 
 export default router;
