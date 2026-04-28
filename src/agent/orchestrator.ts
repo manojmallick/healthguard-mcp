@@ -112,32 +112,77 @@ async function parseIntentFromMessage(
   // Fallback: if message contains specific keywords, infer intent directly
   const messageLower = userMessage.toLowerCase();
 
-  // Try to infer from keywords
+  // Try to infer from keywords (specific phrases first)
   let data_type = 'full_record';
-  if (messageLower.includes('medication')) data_type = 'medications';
-  else if (messageLower.includes('lab')) data_type = 'lab_results';
-  else if (messageLower.includes('imaging') || messageLower.includes('scan')) data_type = 'imaging';
-  else if (messageLower.includes('allerg')) data_type = 'allergies';
+  if (messageLower.includes('medication') || messageLower.includes('medications')) {
+    data_type = 'medications';
+  } else if (messageLower.includes('lab result') || messageLower.includes('lab test') || messageLower.includes('lab')) {
+    data_type = 'lab_results';
+  } else if (messageLower.includes('imaging') || messageLower.includes('scan') || messageLower.includes('x-ray') || messageLower.includes('mri') || messageLower.includes('ct scan')) {
+    data_type = 'imaging';
+  } else if (messageLower.includes('allergy') || messageLower.includes('allergies')) {
+    data_type = 'allergies';
+  } else if (messageLower.includes('vital sign') || messageLower.includes('vitals') || messageLower.includes('bp') || messageLower.includes('heart rate')) {
+    data_type = 'vital_signs';
+  } else if (messageLower.includes('clinical note') || messageLower.includes('note') || messageLower.includes('progress note')) {
+    data_type = 'clinical_notes';
+  } else if (messageLower.includes('problem list') || messageLower.includes('diagnosis') || messageLower.includes('diagnoses')) {
+    data_type = 'problem_list';
+  } else if (messageLower.includes('full record') || messageLower.includes('full patient record') || messageLower.includes('complete record')) {
+    data_type = 'full_record';
+  }
 
   let requester_role = 'treating_physician';
-  if (messageLower.includes('specialist')) requester_role = 'specialist';
-  else if (messageLower.includes('patient')) requester_role = 'patient';
-  else if (messageLower.includes('insurer') || messageLower.includes('insurance')) requester_role = 'insurer';
-  else if (messageLower.includes('researcher')) requester_role = 'researcher';
+  // Check specific phrases first before single keywords
+  if (messageLower.includes('treating physician') || messageLower.includes('treating provider')) {
+    requester_role = 'treating_physician';
+  } else if (messageLower.includes('specialist')) {
+    requester_role = 'specialist';
+  } else if (messageLower.includes('hospital admin') || messageLower.includes('administrator')) {
+    requester_role = 'hospital_admin';
+  } else if (messageLower.includes('insurer') || messageLower.includes('insurance company') || messageLower.includes('insurance')) {
+    requester_role = 'insurer';
+  } else if (messageLower.includes('researcher')) {
+    requester_role = 'researcher';
+  } else if (messageLower.includes('employer')) {
+    requester_role = 'employer';
+  } else if (messageLower.includes('patient advocate')) {
+    requester_role = 'patient_advocate';
+  } else if (messageLower.includes('patient')) {
+    requester_role = 'patient';
+  }
 
   let care_relationship = 'treatment';
-  if (messageLower.includes('referral')) care_relationship = 'referral';
-  else if (messageLower.includes('payment') || messageLower.includes('billing')) care_relationship = 'payment';
+  if (messageLower.includes('referral') || messageLower.includes('refer')) {
+    care_relationship = 'referral';
+  } else if (messageLower.includes('payment') || messageLower.includes('billing') || messageLower.includes('insurance claim') || messageLower.includes('claim')) {
+    care_relationship = 'payment';
+  } else if (messageLower.includes('ongoing treatment') || messageLower.includes('treatment')) {
+    care_relationship = 'treatment';
+  }
 
   let urgency = 'routine';
   if (messageLower.includes('urgent') && !messageLower.includes('routine')) urgency = 'urgent';
   else if (messageLower.includes('emergent') || messageLower.includes('emergency')) urgency = 'emergent';
 
   let care_setting = 'ambulatory';
-  if (messageLower.includes('hospital')) care_setting = 'hospital';
-  else if (messageLower.includes('telehealth') || messageLower.includes('remote')) care_setting = 'telehealth';
-  else if (messageLower.includes('home health')) care_setting = 'home_health';
-  else if (messageLower.includes('urgent care')) care_setting = 'urgent_care';
+  if (messageLower.includes('hospital')) {
+    care_setting = 'hospital';
+  } else if (messageLower.includes('telehealth') || messageLower.includes('remote') || messageLower.includes('virtual visit')) {
+    care_setting = 'telehealth';
+  } else if (messageLower.includes('home health') || messageLower.includes('home care')) {
+    care_setting = 'home_health';
+  } else if (messageLower.includes('urgent care')) {
+    care_setting = 'urgent_care';
+  } else if (messageLower.includes('nursing home') || messageLower.includes('long-term care')) {
+    care_setting = 'nursing_home';
+  } else if (messageLower.includes('mental health') || messageLower.includes('psychiatric')) {
+    care_setting = 'mental_health';
+  } else if (messageLower.includes('research')) {
+    care_setting = 'research';
+  } else if (messageLower.includes('ambulatory') || messageLower.includes('outpatient') || messageLower.includes('clinic')) {
+    care_setting = 'ambulatory';
+  }
 
   return {
     data_type: data_type as IntentParsed['data_type'],
