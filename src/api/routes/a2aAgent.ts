@@ -56,6 +56,17 @@ const handleA2ATask = async (req: Request, res: Response) => {
     let request: A2ARequest;
     const body = req.body as any;
 
+    // Log incoming request
+    console.log(JSON.stringify({
+      severity: 'INFO',
+      message: 'A2A task received',
+      method: req.method,
+      path: req.path,
+      url: req.url,
+      body: body,
+      timestamp: new Date().toISOString(),
+    }));
+
     // Convert Prompt Opinion format to A2A protocol format
     if (body.externalAgentId && typeof body.message === 'string') {
       // This is Prompt Opinion's format, convert it

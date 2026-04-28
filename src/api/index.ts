@@ -67,6 +67,16 @@ app.use(complianceRouter);
 app.use('/mcp', mcpRouter);
 
 // A2A Agent routes (for Prompt Opinion - must come before static files)
+app.use((req: Request, res: Response, next: NextFunction) => {
+  if (req.path === '/' && req.method === 'POST') {
+    console.log(JSON.stringify({
+      severity: 'DEBUG',
+      message: 'POST / request hitting a2a router',
+      timestamp: new Date().toISOString(),
+    }));
+  }
+  next();
+});
 app.use(a2aRouter);
 
 // Static files for frontend (must come after API routes)
