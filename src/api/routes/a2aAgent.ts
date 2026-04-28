@@ -67,9 +67,9 @@ const handleA2ATask = async (req: Request, res: Response) => {
       timestamp: new Date().toISOString(),
     }));
 
-    // Convert Prompt Opinion format to A2A protocol format
+    // Convert various formats to our internal A2ARequest format
     if (body.externalAgentId && typeof body.message === 'string') {
-      // This is Prompt Opinion's format, convert it
+      // Prompt Opinion's SendA2AMessage format: { externalAgentId, message: "text" }
       request = {
         id: body.externalAgentId || `po-${Date.now()}`,
         message: {
@@ -78,8 +78,18 @@ const handleA2ATask = async (req: Request, res: Response) => {
         },
         metadata: body.metadata,
       };
+    } else if (body.message && body.message.parts && body.message.messageId) {
+      // Google A2A protocol format: { message: { parts, messageId, role } }
+      request = {
+        id: body.message.messageId || `a2a-${Date.now()}`,
+        message: {
+          role: body.message.role === 'ROLE_USER' ? 'user' : (body.message.role || 'user'),
+          parts: body.message.parts,
+        },
+        metadata: body.metadata,
+      };
     } else {
-      // Standard A2A format
+      // Fallback: assume it's already in our format
       request = body;
     }
 
