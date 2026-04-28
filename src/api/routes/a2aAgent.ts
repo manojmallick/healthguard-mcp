@@ -122,7 +122,10 @@ const handleA2ATask = async (req: Request, res: Response) => {
   }
 };
 
-// Register all A2A task endpoints (Prompt Opinion might call any of these)
+// Register all A2A task endpoints (Google A2A protocol standard paths)
+router.post('/a2a/v1/message:send', handleA2ATask);
+router.post('/a2a/v1/messages:send', handleA2ATask);
+// Fallback paths for compatibility
 router.post('/', handleA2ATask);
 router.post('/a2a', handleA2ATask);
 router.post('/tasks', handleA2ATask);
