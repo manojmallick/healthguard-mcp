@@ -126,5 +126,7 @@ const handleA2ATask = async (req: Request, res: Response) => {
 router.post('/', handleA2ATask);
 router.post('/a2a', handleA2ATask);
 router.post('/tasks', handleA2ATask);
+router.post('/.well-known/agent.json', handleA2ATask);
+router.post('/.well-known/agent-card.json', handleA2ATask);
 
 export default router;
