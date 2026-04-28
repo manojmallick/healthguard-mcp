@@ -11,6 +11,11 @@ const getAgentCard = (req: Request, res: Response) => {
     description:
       'Healthcare regulatory compliance intelligence — checks HIPAA, ONC information blocking rules, patient consent, and generates FHIR-compliant audit trails. Orchestrates all 5 compliance tools in an intelligent pipeline for comprehensive healthcare data access decisions.',
     url: 'https://healthguard-908307939543.europe-west1.run.app/a2a',
+    supportedInterfaces: [
+      {
+        id: 'A2A',
+      },
+    ],
     capabilities: {
       streaming: false,
       pushNotifications: false,
