@@ -111,7 +111,8 @@ const handleA2ATask = async (req: Request, res: Response) => {
   }
 };
 
-// Register both common A2A task endpoints
+// Register all A2A task endpoints (Prompt Opinion might call any of these)
+router.post('/', handleA2ATask);
 router.post('/a2a', handleA2ATask);
 router.post('/tasks', handleA2ATask);
 
