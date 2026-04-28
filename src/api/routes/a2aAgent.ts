@@ -130,28 +130,6 @@ const handleA2ATask = async (req: Request, res: Response) => {
 
     // Execute the compliance check
     const result = await executeComplianceCheck(request);
-
-    // Check if this is Prompt Opinion's A2A protocol format (expects task response)
-    if (req.path === '/a2a/v1/message:send') {
-      // Wrap response for Prompt Opinion's A2A task format
-      // TaskStatus expects uppercase enum: PENDING, RUNNING, DONE, etc.
-      const statusMap: Record<string, string> = {
-        completed: 'DONE',
-        failed: 'FAILED',
-        pending: 'PENDING',
-      };
-      const taskStatus = statusMap[result.status.state] || 'DONE';
-
-      return res.json({
-        task: {
-          id: result.id,
-          status: taskStatus,
-          result: result,
-        },
-      });
-    }
-
-    // Standard A2A response format
     res.json(result);
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
