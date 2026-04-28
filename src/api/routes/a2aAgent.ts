@@ -85,6 +85,12 @@ const handleA2ATask = async (req: Request, res: Response) => {
 
     // Validate required fields
     if (!request.id) {
+      console.log(JSON.stringify({
+        severity: 'ERROR',
+        message: 'Missing id in request',
+        body: body,
+        timestamp: new Date().toISOString(),
+      }));
       return res.status(400).json({
         id: 'unknown',
         status: {
@@ -96,6 +102,12 @@ const handleA2ATask = async (req: Request, res: Response) => {
     }
 
     if (!request.message || !Array.isArray(request.message.parts)) {
+      console.log(JSON.stringify({
+        severity: 'ERROR',
+        message: 'Invalid message format',
+        request: { id: request.id, message: request.message },
+        timestamp: new Date().toISOString(),
+      }));
       return res.status(400).json({
         id: request.id,
         status: {
