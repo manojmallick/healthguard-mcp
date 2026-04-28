@@ -28,6 +28,7 @@ const getAgentCard = (req: Request, res: Response) => {
           'Natural language healthcare scenario (e.g., "A specialist wants access to medication list for a patient referral")',
         outputDescription:
           'Structured compliance decision with applicable regulations, conditions met, approved/flagged PHI elements, audit evidence, and actionable recommendations.',
+        tags: ['healthcare', 'compliance', 'hipaa', 'regulatory', 'fhir', 'audit'],
       },
     ],
   });
