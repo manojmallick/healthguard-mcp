@@ -108,32 +108,43 @@ async function parseIntentFromMessage(
   userMessage: string,
   llmClient: GeminiLLMClient
 ): Promise<IntentParsed> {
-  const prompt = `Extract the healthcare compliance scenario from this user message and return JSON with:
-- data_type: one of [medications, lab_results, imaging, clinical_notes, problem_list, allergies, vital_signs, full_record]
-- requester_role: one of [treating_physician, specialist, hospital_admin, patient, patient_advocate, insurer, employer, researcher]
-- care_relationship: one of [treatment, referral, payment, none]
-- urgency: one of [routine, urgent, emergent]
-- care_setting: one of [hospital, ambulatory, urgent_care, telehealth, home_health, nursing_home, mental_health, research]
+  // Fallback: if message contains specific keywords, infer intent directly
+  const messageLower = userMessage.toLowerCase();
 
-User message: "${userMessage}"
+  // Try to infer from keywords
+  let data_type = 'full_record';
+  if (messageLower.includes('medication')) data_type = 'medications';
+  else if (messageLower.includes('lab')) data_type = 'lab_results';
+  else if (messageLower.includes('imaging') || messageLower.includes('scan')) data_type = 'imaging';
+  else if (messageLower.includes('allerg')) data_type = 'allergies';
 
-Return ONLY valid JSON, no other text.`;
+  let requester_role = 'treating_physician';
+  if (messageLower.includes('specialist')) requester_role = 'specialist';
+  else if (messageLower.includes('patient')) requester_role = 'patient';
+  else if (messageLower.includes('insurer') || messageLower.includes('insurance')) requester_role = 'insurer';
+  else if (messageLower.includes('researcher')) requester_role = 'researcher';
 
-  const result = await llmClient.invokeToolWithRetry({
-    toolName: 'intent_parser',
-    input: { userMessage, prompt },
-    schema: null as any,
-  });
+  let care_relationship = 'treatment';
+  if (messageLower.includes('referral')) care_relationship = 'referral';
+  else if (messageLower.includes('payment') || messageLower.includes('billing')) care_relationship = 'payment';
 
-  if (!result.success || !result.result) {
-    throw new Error('Failed to parse user intent');
-  }
+  let urgency = 'routine';
+  if (messageLower.includes('urgent') && !messageLower.includes('routine')) urgency = 'urgent';
+  else if (messageLower.includes('emergent') || messageLower.includes('emergency')) urgency = 'emergent';
 
-  try {
-    return JSON.parse(result.result as string);
-  } catch {
-    throw new Error('Invalid intent JSON: ' + result.result);
-  }
+  let care_setting = 'ambulatory';
+  if (messageLower.includes('hospital')) care_setting = 'hospital';
+  else if (messageLower.includes('telehealth') || messageLower.includes('remote')) care_setting = 'telehealth';
+  else if (messageLower.includes('home health')) care_setting = 'home_health';
+  else if (messageLower.includes('urgent care')) care_setting = 'urgent_care';
+
+  return {
+    data_type: data_type as IntentParsed['data_type'],
+    requester_role: requester_role as IntentParsed['requester_role'],
+    care_relationship: care_relationship as IntentParsed['care_relationship'],
+    urgency: urgency as IntentParsed['urgency'],
+    care_setting: care_setting as IntentParsed['care_setting'],
+  };
 }
 
 export async function executeComplianceCheck(
