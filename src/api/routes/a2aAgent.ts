@@ -13,9 +13,8 @@ const getAgentCard = (req: Request, res: Response) => {
     url: 'https://healthguard-908307939543.europe-west1.run.app/a2a',
     supportedInterfaces: [
       {
-        id: 'A2A',
         url: 'https://healthguard-908307939543.europe-west1.run.app/a2a',
-        protocolBinding: 'HTTP',
+        protocolBinding: 'HTTP+JSON',
         protocolVersion: '1.0',
       },
     ],
