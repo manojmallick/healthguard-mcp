@@ -1,0 +1,33 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Shield background - Green (#1D9E75) -->
+  <defs>
+    <linearGradient id="shieldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2DB88D;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1D9E75;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Main shield -->
+  <path d="M 100 20 L 160 50 L 160 110 Q 100 160 100 160 Q 100 160 40 110 L 40 50 Z"
+        fill="url(#shieldGradient)" stroke="#0F6B4D" stroke-width="2"/>
+
+  <!-- Inner highlight for depth -->
+  <path d="M 100 28 L 152 54 L 152 108 Q 100 152 100 152 Q 100 152 48 108 L 48 54 Z"
+        fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+
+  <!-- Heart shape inside shield -->
+  <g transform="translate(100, 92)">
+    <path d="M 0,-10 C -8,-16 -18,-16 -18,-6 C -18,6 -10,14 0,22 C 10,14 18,6 18,-6 C 18,-16 8,-16 0,-10 Z"
+          fill="white" stroke="white" stroke-width="0.5" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.2))"/>
+  </g>
+
+  <!-- Checkmark overlaid on heart -->
+  <g transform="translate(100, 92)">
+    <path d="M -6 -2 L 0 4 L 8 -8" stroke="#1D9E75" stroke-width="2.5" fill="none"
+          stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <!-- Optional: Subtle text label below shield -->
+  <text x="100" y="175" font-family="Arial, sans-serif" font-size="11" font-weight="bold"
+        text-anchor="middle" fill="#1D9E75" opacity="0.8">HealthGuard</text>
+</svg>
