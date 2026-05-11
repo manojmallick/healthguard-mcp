@@ -119,26 +119,317 @@ See [DEPLOYMENT.md](./DEPLOYMENT.md) for GCP Cloud Run setup.
 bash DEPLOYMENT.md
 ```
 
+### Publishing to Prompt Opinion Marketplace
+
+HealthGuard is published as an A2A agent on the Prompt Opinion platform. To publish your own instance:
+
+**Step 1: Deploy to Cloud Run** (required first)
+```bash
+gcloud run deploy healthguard \
+  --image=gcr.io/$PROJECT_ID/healthguard:latest \
+  --region=europe-west1 \
+  --allow-unauthenticated
+export SERVICE_URL=$(gcloud run services describe healthguard --region=europe-west1 --format='value(status.url)')
+echo "Your HealthGuard URL: $SERVICE_URL"
+```
+
+**Step 2: Register on Prompt Opinion**
+- Navigate to https://app.promptopinion.ai
+- Create an account (if not already registered)
+- Go to "Manage Agents" → "Create Agent"
+
+**Step 3: Configure Agent**
+- **Agent Name**: HealthGuard (or your custom name)
+- **Agent Type**: A2A (Agent-to-Agent) / MCP Server
+- **Base URL**: `$SERVICE_URL` (your Cloud Run URL from Step 1)
+- **Agent Card Path**: `/.well-known/agent.json`
+- **Protocol**: A2A (Google standard)
+- **SHARP Support**: Yes ✓
+- **Description**: "Healthcare regulatory compliance intelligence. Checks HIPAA, ONC information blocking, patient consent, generates audit events."
+
+**Step 4: Configure Tools** (Platform auto-discovers from agent.json)
+The 5 tools appear automatically:
+- ✅ check_information_blocking
+- ✅ assess_hipaa_minimum_necessary
+- ✅ check_patient_consent
+- ✅ generate_audit_event
+- ✅ get_applicable_regulations
+
+**Step 5: Test Integration**
+```bash
+# Platform provides a test query field
+# Try: "A specialist needs medication list for a patient referral"
+# Should return PERMITTED + regulations cited
+```
+
+**Step 6: Publish to Marketplace**
+- Click "Publish to Marketplace"
+- Accept terms (healthcare compliance use cases only)
+- Agent goes live immediately
+
+**Verify Publication**:
+```bash
+curl https://app.promptopinion.ai/marketplace/healthguard \
+  -H "Accept: application/json"
+# Should return agent metadata
+```
+
 ---
 
 ## Architecture
 
+### System Dataflow
+
 ```
-Agent (Prompt Opinion)
-    ↓
-MCP Server (HealthGuard)
-    ├── Tool 1: Information Blocking Exception Resolver
-    ├── Tool 2: HIPAA Minimum Necessary Evaluator
-    ├── Tool 3: Patient Consent Validator
-    ├── Tool 4: FHIR AuditEvent Generator
-    └── Tool 5: Regulatory Lookup (RAG)
-    ↓
-FHIR R4 Server (HAPI, EHR endpoint, etc.)
-    ↓
-Compliance Decision + Audit Trail
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         PROMPT OPINION PLATFORM                             │
+│                                                                             │
+│  AI Agent receives compliance question:                                     │
+│  "Can we share this patient's data with this requester?"                   │
+│                                                                             │
+│  + SHARP Context (patient ID, FHIR credentials, encounter context)         │
+└────────────────────────────┬────────────────────────────────────────────────┘
+                             │
+                             ↓ POST /a2a (A2A Protocol)
+                   ┌─────────────────────────┐
+                   │  HealthGuard MCP Server │
+                   │     Port 3100           │
+                   └────────────┬────────────┘
+                                │
+                    ┌───────────┴────────────┐
+                    │                        │
+                    ↓ PARALLEL               ↓
+         ┌──────────────────────┐  ┌─────────────────────────┐
+         │ Tool 1: Information  │  │ Tool 5: Regulatory      │
+         │ Blocking Check       │  │ Lookup (RAG)            │
+         │ (ONC §171.302–309)   │  │ (HIPAA + State laws)    │
+         └──────────────────────┘  └─────────────────────────┘
+                    │                        │
+                    └───────────┬────────────┘
+                                │
+                                ↓ Synthesis
+                   ┌─────────────────────────┐
+                   │ Tool 2: Minimum         │
+                   │ Necessary Assessment    │
+                   │ (HIPAA §164.502)        │
+                   └────────────┬────────────┘
+                                │
+                                ↓ IF SHARP context available
+                   ┌─────────────────────────┐
+                   │ Tool 3: Patient Consent │
+                   │ Check (FHIR Consent)    │
+                   │ + FHIR Server Query     │
+                   └────────────┬────────────┘
+                                │
+                                ↓ Final synthesis
+                   ┌─────────────────────────┐
+                   │ Tool 4: FHIR AuditEvent │
+                   │ Generator (tamper-proof)│
+                   │ SHA-256 hash            │
+                   └────────────┬────────────┘
+                                │
+                                ↓
+         ┌──────────────────────────────────────────────────┐
+         │  COMPLIANCE DECISION OUTPUT                      │
+         │  ├─ permitted (true/false)                       │
+         │  ├─ applicable_exception (§171.302–309)          │
+         │  ├─ conditions_met[] / conditions_not_met[]      │
+         │  ├─ approved_phi_elements[] / flagged[]          │
+         │  ├─ fhir_audit_event (0 validation errors)       │
+         │  ├─ sha256_hash (tamper evidence)                │
+         │  └─ recommended_action + regulatory_basis        │
+         └──────────────────────────────────────────────────┘
 ```
 
-**SHARP Context Support**: All tools accept SHARP fields (`_sharp_patient_id`, `_sharp_fhir_base_url`, `_sharp_fhir_token`) for seamless EHR integration.
+### Component Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           HEALTHGUARD MCP SERVER                            │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  ┌────────────────────────────────────────────────────────────────────┐    │
+│  │  API Layer (Express.js)                                            │    │
+│  │  ├─ POST /a2a (A2A protocol endpoint)                             │    │
+│  │  ├─ GET /.well-known/agent.json (agent card)                      │    │
+│  │  ├─ GET /health (liveness probe)                                  │    │
+│  │  └─ GET /ready (readiness probe)                                  │    │
+│  └────────────────────────────────────────────────────────────────────┘    │
+│                                                                              │
+│  ┌────────────────────────────────────────────────────────────────────┐    │
+│  │  Tool Layer (5 independent tools)                                  │    │
+│  │                                                                    │    │
+│  │  Tool 1: InformationBlockingTool                                  │    │
+│  │  └─ Evaluates ONC information blocking exceptions (§171.301–309)  │    │
+│  │                                                                    │    │
+│  │  Tool 2: MinimumNecessaryTool                                     │    │
+│  │  └─ Assesses HIPAA minimum necessary standard (§164.502)          │    │
+│  │                                                                    │    │
+│  │  Tool 3: PatientConsentTool                                       │    │
+│  │  └─ Queries FHIR R4 Consent resources, validates status           │    │
+│  │                                                                    │    │
+│  │  Tool 4: AuditEventTool                                           │    │
+│  │  └─ Generates FHIR R4 AuditEvent + SHA-256 tamper-proof hash      │    │
+│  │                                                                    │    │
+│  │  Tool 5: RegulationLookupTool                                     │    │
+│  │  └─ RAG-based lookup: returns applicable regulations + citations  │    │
+│  │                                                                    │    │
+│  └────────────────────────────────────────────────────────────────────┘    │
+│                                                                              │
+│  ┌────────────────────────────────────────────────────────────────────┐    │
+│  │  LLM Integration Layer (Google Gemini 2.0 Flash)                   │    │
+│  │  ├─ Intent parsing (natural language → structured parameters)     │    │
+│  │  ├─ Exception determination (LLM-as-compiler, fixed enum)          │    │
+│  │  ├─ Minimum necessary reasoning (context-aware assessment)        │    │
+│  │  └─ Regulatory summary synthesis                                  │    │
+│  └────────────────────────────────────────────────────────────────────┘    │
+│                                                                              │
+│  ┌────────────────────────────────────────────────────────────────────┐    │
+│  │  Data Layer                                                        │    │
+│  │  ├─ Regulatory reference data (45 CFR Part 171, §164, etc.)       │    │
+│  │  ├─ PHI element definitions (sensitivity levels, requirements)    │    │
+│  │  ├─ HIPAA rules & exceptions database                             │    │
+│  │  └─ SHARP context extraction (patient ID, FHIR creds)             │    │
+│  └────────────────────────────────────────────────────────────────────┘    │
+│                                                                              │
+│  ┌────────────────────────────────────────────────────────────────────┐    │
+│  │  FHIR Integration Layer                                            │    │
+│  │  ├─ FHIR R4 Client (queries HAPI, EHR endpoints, etc.)            │    │
+│  │  ├─ Consent Resource Parser (FHIR R4 Consent validation)          │    │
+│  │  ├─ AuditEvent Builder (FHIR R4 AuditEvent generation)            │    │
+│  │  └─ Resource Validator (passes validator.fhir.org at 0 errors)    │    │
+│  └────────────────────────────────────────────────────────────────────┘    │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                    ┌───────────────┴───────────────┐
+                    │                               │
+                    ↓                               ↓
+        ┌─────────────────────┐       ┌──────────────────────┐
+        │   FHIR R4 Server    │       │  Google Gemini API   │
+        │  (HAPI / EHR)       │       │  (LLM reasoning)     │
+        │  (query Consent,    │       │  (exception logic,   │
+        │   Patient, etc.)    │       │   synthesis)         │
+        └─────────────────────┘       └──────────────────────┘
+```
+
+### Data Flow Example: Nurse Scenario
+
+```
+INPUT: "A specialist wants medication list for a patient referral. Routine."
+       + SHARP { patient_id: "pt-456", fhir_base_url: "https://hapi...", fhir_token: "..." }
+
+       ↓ Intent Parser
+       → requester_role: "specialist"
+       → data_type: "medications"
+       → care_relationship: "referral"
+       → urgency: "routine"
+
+       ↓ PARALLEL execution
+       ┌─────────────────────────────────────────────────────────────┐
+       │ Tool 1: Information Blocking                                 │
+       │ Input: {requester_role, care_relationship, urgency}         │
+       │ → LLM: "Which ONC exception applies?"                       │
+       │ → Output: {                                                 │
+       │     permitted: true,                                        │
+       │     applicable_exception: "TREATMENT",                      │
+       │     exception_subsection: "45 CFR §171.302(a)",             │
+       │     conditions_met: [                                       │
+       │       "Treating provider relationship",                     │
+       │       "Purpose is treatment/referral"                       │
+       │     ]                                                       │
+       │   }                                                         │
+       └─────────────────────────────────────────────────────────────┘
+
+       ┌─────────────────────────────────────────────────────────────┐
+       │ Tool 5: Regulation Lookup                                    │
+       │ Input: {care_setting: "ambulatory", data_type: "medications"}
+       │ → RAG lookup: return applicable regulations                 │
+       │ → Output: {                                                 │
+       │     regulations: [                                          │
+       │       {name: "HIPAA Privacy Rule",                          │
+       │        citation: "45 CFR §164.501",                         │
+       │        requirement: "Uses permitted for treatment"},        │
+       │       {...more regulations...}                              │
+       │     ]                                                       │
+       │   }                                                         │
+       └─────────────────────────────────────────────────────────────┘
+
+       ↓ Synthesis (Tool 1 result: permitted=true, Tool 5: regulations)
+
+       ┌─────────────────────────────────────────────────────────────┐
+       │ Tool 2: Minimum Necessary Assessment                         │
+       │ Input: {                                                    │
+       │   phi_elements: ["name", "dob", "mrn", "medications"],      │
+       │   stated_purpose: "REFERRAL",                               │
+       │   requester_role: "specialist"                              │
+       │ }                                                           │
+       │ → LLM: "Which of these PHI elements are minimum necessary?" │
+       │ → Output: {                                                 │
+       │     assessment: "APPROVED",                                 │
+       │     approved_elements: ["name", "dob", "mrn", "medications"],
+       │     flagged_elements: ["full_lab_history", "psychiatric"],  │
+       │     rationale: "Name/DOB/MRN standard for ID; meds relevant"│
+       │   }                                                         │
+       └─────────────────────────────────────────────────────────────┘
+
+       ↓ IF SHARP context present
+
+       ┌─────────────────────────────────────────────────────────────┐
+       │ Tool 3: Patient Consent Check                                │
+       │ Input: {                                                    │
+       │   patient_fhir_id: "pt-456",                                │
+       │   data_category: "medications",                             │
+       │   fhir_base_url: "https://hapi.fhir.org/baseR4",            │
+       │   fhir_token: "Bearer xxxxxx"                               │
+       │ }                                                           │
+       │ → Query FHIR: GET /Consent?patient=pt-456                   │
+       │ → Output: {                                                 │
+       │     consent_status: "ACTIVE",                               │
+       │     conditions: ["Sharing with healthcare providers OK"],   │
+       │     expiry_date: "2027-05-11"                               │
+       │   }                                                         │
+       └─────────────────────────────────────────────────────────────┘
+
+       ↓ Final synthesis
+
+       ┌─────────────────────────────────────────────────────────────┐
+       │ Tool 4: FHIR AuditEvent Generation                           │
+       │ Input: {                                                    │
+       │   action: "R" (read),                                       │
+       │   patient_fhir_id: "pt-456",                                │
+       │   compliance_basis: "45 CFR §171.302(a)",                   │
+       │   outcome: 0 (success)                                      │
+       │ }                                                           │
+       │ → Generate FHIR R4 AuditEvent                               │
+       │ → Compute SHA-256 hash                                      │
+       │ → Validate at validator.fhir.org                            │
+       │ → Output: {                                                 │
+       │     fhir_audit_event: {...},                                │
+       │     sha256_hash: "a3f9e8d7c6b5a4f3e2d1c0b9a8f7e6d5...",     │
+       │     storage_recommendation: "HIPAA-compliant audit log"      │
+       │   }                                                         │
+       └─────────────────────────────────────────────────────────────┘
+
+OUTPUT:
+{
+  "permitted": true,
+  "decision": "PERMITTED",
+  "applicable_exception": "TREATMENT",
+  "exception_subsection": "45 CFR §171.302(a)",
+  "conditions_met": ["Treating relationship", "Referral purpose"],
+  "approved_elements": ["name", "dob", "mrn", "medications"],
+  "flagged_elements": ["lab_history", "psychiatric_notes"],
+  "audit_hash": "a3f9e8d7c6b5a4f3e2d1c0b9a8f7e6d5...",
+  "recommended_action": "Access permitted under HIPAA Treatment Exception",
+  "regulations_cited": [
+    "45 CFR §171.302(a) — ONC Treatment Exception",
+    "45 CFR §164.501 — HIPAA Treatment Use"
+  ]
+}
+```
+
+**SHARP Context Support**: All tools seamlessly accept SHARP fields (`_sharp_patient_id`, `_sharp_fhir_base_url`, `_sharp_fhir_token`, `_sharp_encounter_id`, `_sharp_practitioner_id`, `_sharp_organization_id`) for secure EHR integration without credential leakage.
 
 ---
 
