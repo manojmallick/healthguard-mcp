@@ -496,7 +496,7 @@ OUTPUT:
   "approved_elements": ["name", "dob", "mrn", "medications"],
   "flagged_elements": ["lab_history", "psychiatric_notes"],
   "audit_hash": "a3f9e8d7c6b5a4f3e2d1c0b9a8f7e6d5...",
-  "recommended_action": "Access permitted under HIPAA Treatment Exception",
+  "recommended_action": "Access permitted under ONC treatment exception",
   "regulations_cited": [
     "45 CFR §171.302(a) — ONC Treatment Exception",
     "45 CFR §164.501 — HIPAA Treatment Use"
