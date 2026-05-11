@@ -185,8 +185,6 @@ curl https://healthguard-908307939543.europe-west1.run.app/a2a \
 # Expected response: PERMITTED + 45 CFR §171.302(a) citation
 ```
 
-See [Demo Script](./devpost-submission/DEMO_SCRIPT.md) for 3 test scenarios with expected outputs.
-
 ---
 
 ## Quick Start
@@ -213,11 +211,15 @@ npm run start:dev
 
 ### Production Deployment
 
-See [DEPLOYMENT.md](./DEPLOYMENT.md) for GCP Cloud Run setup.
+Deploy to GCP Cloud Run:
 
 ```bash
-# One-command deployment (requires GCP project)
-bash DEPLOYMENT.md
+# One-command deployment (requires GCP project + gcloud CLI)
+gcloud run deploy healthguard \
+  --image=gcr.io/$PROJECT_ID/healthguard:latest \
+  --region=europe-west1 \
+  --allow-unauthenticated \
+  --set-env-vars GOOGLE_GEMINI_API_KEY=$GEMINI_KEY
 ```
 
 ### Publishing to Prompt Opinion Marketplace
