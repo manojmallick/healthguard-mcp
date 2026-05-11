@@ -74,14 +74,14 @@ export class InformationBlockingTool {
       return {
         permitted: true,
         applicable_exception: 'TREATMENT' as const,
-        exception_subsection: '45 CFR §164.501-502 (HIPAA Treatment Exception)',
+        exception_subsection: '45 CFR §171.302(a) (ONC Treatment Exception)',
         conditions_met: [
           'Requester is a treating or referring provider',
           'Purpose of use is treatment or referral',
           'Treatment or referral relationship exists',
         ],
         conditions_not_met: [],
-        recommended_action: 'Access permitted under HIPAA treatment exception',
+        recommended_action: 'Access permitted under ONC treatment exception',
         confidence: 1.0,
         audit_trail_required: true,
       };
@@ -92,13 +92,13 @@ export class InformationBlockingTool {
       return {
         permitted: true,
         applicable_exception: 'PAYMENT' as const,
-        exception_subsection: '45 CFR §164.502 (HIPAA Payment Exception)',
+        exception_subsection: '45 CFR §171.303 (ONC Payment Exception)',
         conditions_met: [
           'Requester has payment relationship with patient',
           'Purpose of use is payment processing',
         ],
         conditions_not_met: [],
-        recommended_action: 'Access permitted under HIPAA payment exception',
+        recommended_action: 'Access permitted under ONC payment exception',
         confidence: 0.95,
         audit_trail_required: true,
       };
