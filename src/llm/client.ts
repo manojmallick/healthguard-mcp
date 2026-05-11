@@ -123,13 +123,13 @@ export class GeminiLLMClient {
   "approved_elements": array of strings (PHI elements approved for sharing),
   "flagged_elements": array of strings (PHI elements flagged as excessive),
   "rationale": string (explanation of assessment),
-  "regulatory_citation": string (valid 45 CFR citation)
+  "regulatory_citation": string (valid 45 CFR citation like "45 CFR §164.502(b)")
 }`;
     } else {
       schemaDescription = 'Return valid JSON with all required fields. Do not omit any fields.';
     }
 
-    return `You are a US healthcare compliance expert.
+    let basePrompt = `You are a US healthcare compliance expert.
 
 Tool: ${request.toolName}
 Input: ${JSON.stringify(request.input, null, 2)}
@@ -144,6 +144,22 @@ Rules:
 2. Validate all enum values against fixed lists
 3. Do not hallucinate regulatory citations
 4. Return ONLY the JSON object`;
+
+    // Add tool-specific guidance
+    if (request.toolName === 'assess_hipaa_minimum_necessary') {
+      basePrompt += `
+
+HIPAA MINIMUM NECESSARY STANDARD (45 CFR §164.502(b)):
+- Approved elements: PHI elements that are necessary and appropriate for the stated purpose
+- Flagged elements: PHI elements that exceed what is necessary for the stated purpose
+- TREATMENT purposes: Full medical record typically approved (45 CFR §164.502(b)(2)(i))
+- PAYMENT purposes: Limited to billing-related information only
+- RESEARCH: Limited to protocol-approved elements only
+- QUALITY_IMPROVEMENT: Limited to performance measurement data
+- PATIENT_REQUEST: All elements approved (patient can request full record)`;
+    }
+
+    return basePrompt;
   }
 
   async testConnection(): Promise<boolean> {

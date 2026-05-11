@@ -91,7 +91,40 @@ const PURPOSE_BY_RELATIONSHIP: Record<string, string> = {
   treatment: 'TREATMENT',
   referral: 'REFERRAL',
   payment: 'PAYMENT',
-  none: 'OPERATIONS',
+};
+
+// Get HIPAA purpose based on care relationship and requester role
+function getPurposeForRole(role: string, care_relationship: string): string {
+  if (care_relationship !== 'none') {
+    return PURPOSE_BY_RELATIONSHIP[care_relationship];
+  }
+  // For 'none' relationship, map role to appropriate purpose
+  switch (role) {
+    case 'researcher':
+      return 'RESEARCH';
+    case 'hospital_admin':
+      return 'QUALITY_IMPROVEMENT';
+    case 'insurer':
+    case 'employer':
+      return 'PAYMENT';
+    case 'patient':
+    case 'patient_advocate':
+      return 'PATIENT_REQUEST';
+    default:
+      return 'QUALITY_IMPROVEMENT';
+  }
+}
+
+// Map data types to RegulationLookupTool's supported enum
+const DATA_TYPE_FOR_REGULATIONS: Record<string, string> = {
+  medications: 'medications',
+  lab_results: 'lab_results',
+  imaging: 'imaging',
+  clinical_notes: 'full_record',
+  problem_list: 'full_record',
+  allergies: 'medications',
+  vital_signs: 'full_record',
+  full_record: 'full_record',
 };
 
 const ROLE_MAPPING: Record<string, string> = {
@@ -152,13 +185,24 @@ async function parseIntentFromMessage(
     requester_role = 'patient';
   }
 
-  let care_relationship = 'treatment';
+  // Determine care_relationship: explicit keywords first, then role-based default
+  let care_relationship: 'treatment' | 'referral' | 'payment' | 'none' = 'treatment';
   if (messageLower.includes('referral') || messageLower.includes('refer')) {
     care_relationship = 'referral';
   } else if (messageLower.includes('payment') || messageLower.includes('billing') || messageLower.includes('insurance claim') || messageLower.includes('claim')) {
     care_relationship = 'payment';
   } else if (messageLower.includes('ongoing treatment') || messageLower.includes('treatment')) {
     care_relationship = 'treatment';
+  } else {
+    // No explicit keyword: set default based on requester role
+    if (requester_role === 'treating_physician' || requester_role === 'specialist') {
+      care_relationship = 'treatment';
+    } else if (requester_role === 'insurer' || requester_role === 'employer') {
+      care_relationship = 'payment';
+    } else {
+      // researcher, hospital_admin, patient, patient_advocate → none
+      care_relationship = 'none';
+    }
   }
 
   let urgency = 'routine';
@@ -250,7 +294,7 @@ export async function executeComplianceCheck(
       }),
       regTool.getApplicableRegulations({
         care_setting: intent.care_setting,
-        data_type: intent.data_type,
+        data_type: DATA_TYPE_FOR_REGULATIONS[intent.data_type] || 'full_record',
         proposed_action:
           intent.care_relationship === 'treatment'
             ? 'treatment'
@@ -263,7 +307,7 @@ export async function executeComplianceCheck(
 
     // Step 2: Minimum necessary assessment
     const phiElements = PHI_BY_DATA_TYPE[intent.data_type] || [];
-    const purpose = PURPOSE_BY_RELATIONSHIP[intent.care_relationship];
+    const purpose = getPurposeForRole(intent.requester_role, intent.care_relationship);
     const mnResult = await mnTool.assess({
       phi_elements_requested: phiElements,
       stated_purpose: purpose,

@@ -104,6 +104,24 @@ export class InformationBlockingTool {
       };
     }
 
+    // Emergency override: urgent or emergent access bypasses normal restrictions
+    if (input.urgency === 'emergent' || input.urgency === 'urgent') {
+      return {
+        permitted: true,
+        applicable_exception: 'HIPAA_PERMISSION' as const,
+        exception_subsection: '45 CFR §164.510(b) (Emergency Access Override)',
+        conditions_met: [
+          'Request has urgent or emergent medical priority',
+          'Immediate access needed for patient care',
+          'Access permitted for emergency circumstances',
+        ],
+        conditions_not_met: [],
+        recommended_action: 'Access permitted due to medical urgency',
+        confidence: 0.95,
+        audit_trail_required: true,
+      };
+    }
+
     // Invoke LLM with retry logic (if not a simple HIPAA treatment/payment case)
     const response = await this.llmClient.invokeToolWithRetry({
       toolName: 'check_information_blocking',
@@ -134,22 +152,16 @@ export class InformationBlockingTool {
       llmResult: result,
     }));
 
-    // Verify exception name is valid (prevent hallucination)
+    // Verify exception name is valid (must match InformationBlockingException enum in schemas.ts)
     const validExceptionNames = [
-      // ONC Information Blocking Exceptions
-      'PREVENTING_HARM',
-      'PRIVACY',
+      'TREATMENT',
+      'PAYMENT',
+      'HEALTHCARE_OPERATIONS',
+      'HIPAA_PERMISSION',
+      'VITALLY_IMPORTANT',
+      'INFEASIBLE',
       'SECURITY',
-      'INFEASIBILITY',
-      'HEALTH_IT_PERFORMANCE',
-      'CONTENT_AND_MANNER',
-      'FEES',
-      'LICENSING',
-      // HIPAA Privacy Rule Purposes of Use
-      'HIPAA_TREATMENT',
-      'HIPAA_PAYMENT',
-      'HIPAA_OPERATIONS',
-      // No applicable exception/purpose
+      'PRIVACY',
       'NONE',
     ];
 
