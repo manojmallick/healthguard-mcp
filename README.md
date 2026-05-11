@@ -7,7 +7,7 @@
 
 > Built by the architect who won 2nd place at DigitalOcean's DORA Compliance Intelligence Hackathon. US healthcare regulatory compliance (HIPAA + 21st Century Cures + ONC information blocking) follows the identical structural pattern as EU financial regulation. HealthGuard is that expertise applied to the $2.5B healthcare compliance market.
 
-[🏥 Live Demo](#quick-start) | [📋 Marketplace](https://app.promptopinion.ai/marketplace) | [▶ Documentation](./docs/) | [📝 DevPost Narrative](./devpost-submission/DEVPOST_NARRATIVE.md) | [🎬 Demo Script](./devpost-submission/DEMO_SCRIPT.md) | [🤝 Contributing](./CONTRIBUTING.md)
+[🏥 Dashboard](https://healthguard-j6pe6wobrq-ew.a.run.app/dashboard) | [🤖 External Agent](https://app.promptopinion.ai/marketplace/agent/019dd3d3-b545-78c0-9b35-cf7db724e1d3) | [🤖 BYB Agent](https://app.promptopinion.ai/marketplace/agent/019dd646-8b14-7daf-aed3-de588562757b) | [🛠️ MCP Server](https://app.promptopinion.ai/marketplace/mcp/019dceaa-7a99-7419-a6e0-131584a24f38) | [▶ Documentation](./docs/) | [🤝 Contributing](./CONTRIBUTING.md)
 
 ---
 
