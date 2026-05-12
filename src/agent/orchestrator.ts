@@ -64,6 +64,7 @@ export interface IntentParsed {
     | 'nursing_home'
     | 'mental_health'
     | 'research';
+  has_consent?: boolean;
 }
 
 const PHI_BY_DATA_TYPE: Record<string, string[]> = {
@@ -228,12 +229,29 @@ async function parseIntentFromMessage(
     care_setting = 'ambulatory';
   }
 
+  // Extract consent status from natural language
+  let has_consent = true;
+  if (
+    messageLower.includes('no consent') ||
+    messageLower.includes('no authorization') ||
+    messageLower.includes('not signed') ||
+    messageLower.includes('not on file') ||
+    messageLower.includes('without consent') ||
+    messageLower.includes('without') && messageLower.includes('authorization') ||
+    messageLower.includes('without') && messageLower.includes('consent') ||
+    messageLower.includes('missing consent') ||
+    messageLower.includes('missing authorization')
+  ) {
+    has_consent = false;
+  }
+
   return {
     data_type: data_type as IntentParsed['data_type'],
     requester_role: requester_role as IntentParsed['requester_role'],
     care_relationship: care_relationship as IntentParsed['care_relationship'],
     urgency: urgency as IntentParsed['urgency'],
     care_setting: care_setting as IntentParsed['care_setting'],
+    has_consent,
   };
 }
 
@@ -370,6 +388,16 @@ export async function executeComplianceCheck(
       ...sharpContext,
     });
 
+    // Check if HIPAA requires authorization that's missing
+    const hipaaRequiresConsent =
+      (intent.care_relationship === 'payment' || intent.care_relationship === 'none') &&
+      intent.requester_role !== 'treating_physician' &&
+      intent.requester_role !== 'specialist';
+
+    const consentMissing = intent.has_consent === false;
+    const finalPermitted =
+      ibResult.permitted && !(consentMissing && hipaaRequiresConsent);
+
     // Step 6: Synthesize results into human-readable decision
     const decisionText = formatComplianceDecision({
       ibResult,
@@ -379,15 +407,17 @@ export async function executeComplianceCheck(
       regResult,
       consentNote,
       intent,
+      hipaaRequiresConsent,
+      finalPermitted,
     });
 
     const structuredResult = {
-      permitted: ibResult.permitted,
-      decision: ibResult.permitted ? 'PERMITTED' : 'NOT PERMITTED',
+      permitted: finalPermitted,
+      decision: finalPermitted ? 'PERMITTED' : 'NOT PERMITTED',
       applicable_exception: ibResult.applicable_exception,
       exception_subsection: ibResult.exception_subsection,
       conditions_met: ibResult.conditions_met || [],
-      approved_elements: mnResult.approved_elements || [],
+      approved_elements: finalPermitted ? mnResult.approved_elements || [] : [],
       flagged_elements: mnResult.flagged_elements || [],
       consent_status: consentResult?.consent_status || null,
       audit_hash: auditResult.sha256_hash,
@@ -436,6 +466,8 @@ function formatComplianceDecision(results: {
   regResult: any;
   consentNote: string;
   intent: IntentParsed;
+  hipaaRequiresConsent?: boolean;
+  finalPermitted?: boolean;
 }): string {
   const {
     ibResult,
@@ -445,12 +477,14 @@ function formatComplianceDecision(results: {
     regResult,
     consentNote,
     intent,
+    hipaaRequiresConsent,
+    finalPermitted,
   } = results;
 
-  const status = ibResult.permitted ? '✓ PERMITTED' : '✗ NOT PERMITTED';
-  const statusEmoji = ibResult.permitted ? '✓' : '✗';
+  const isFinalPermitted = finalPermitted ?? ibResult.permitted;
+  const statusEmoji = isFinalPermitted ? '✓' : '✗';
 
-  let output = `# ${statusEmoji} Compliance Decision: ${ibResult.permitted ? 'PERMITTED' : 'NOT PERMITTED'}\n\n`;
+  let output = `# ${statusEmoji} Compliance Decision: ${isFinalPermitted ? 'PERMITTED' : 'NOT PERMITTED'}\n\n`;
 
   output += `## Scenario\n`;
   output += `- **Data Type**: ${intent.data_type}\n`;
@@ -469,6 +503,13 @@ function formatComplianceDecision(results: {
     });
   }
   output += `\n`;
+
+  if (!isFinalPermitted && ibResult.permitted && hipaaRequiresConsent && intent.has_consent === false) {
+    output += `## HIPAA Authorization Required (45 CFR §164.508)\n`;
+    output += `- **Issue**: HIPAA requires explicit written authorization for ${intent.care_relationship === 'payment' ? 'payment' : 'non-treatment'} uses\n`;
+    output += `- **Status**: No valid authorization on file\n`;
+    output += `- **Decision Override**: Despite ONC ${ibResult.applicable_exception} exception, access DENIED per HIPAA authorization requirements\n\n`;
+  }
 
   output += `## HIPAA Minimum Necessary (45 CFR §164.502)\n`;
   output += `- **Assessment**: ${mnResult.assessment}\n`;
