@@ -1,6 +1,6 @@
 # HealthGuard — Regulatory Compliance Intelligence for Healthcare AI Agents
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: PolyForm Noncommercial 1.0.0](https://img.shields.io/badge/License-PolyForm%20Noncommercial-1.0.0-orange.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)](https://www.typescriptlang.org/)
 [![FHIR R4](https://img.shields.io/badge/FHIR-R4-green)](https://hl7.org/fhir/R4/)
 [![Prompt Opinion](https://img.shields.io/badge/Prompt%20Opinion-Published-success)](https://app.promptopinion.ai/marketplace)
@@ -692,9 +692,9 @@ Every tool is grounded in actual US federal regulation with links to official so
 
 ---
 
-## Open Source
+## License
 
-MIT License. Contributions welcome.
+The original project code is licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE). Third-party dependencies retain their own licenses.
 
 - [Issues](../../issues) — Report bugs, request features
 - [Good first issues](../../issues?label=good+first+issue) — Great entry points for new contributors
@@ -725,7 +725,7 @@ Amsterdam, Netherlands
 
 ## Repository Metadata
 
-- **License**: MIT
+- **License**: PolyForm Noncommercial 1.0.0
 - **Latest version**: 0.2.0
 - **Status**: Active development
 - **Deployment**: GCP Cloud Run (europe-west1)
